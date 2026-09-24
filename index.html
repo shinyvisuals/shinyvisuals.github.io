@@ -5,43 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ShinyVisuals — Бесплатный визуальный мод для Minecraft 1.21.4</title>
     <link rel="icon" href="./favicon.png" type="image/png" />
-    
-    <!-- Preload critical assets for faster paint -->
-    <link rel="modulepreload" href="./assets/index-a3Ud--8j.js">
-    <link rel="preload" href="./assets/index-BFU9W4F0.css" as="style">
-
-    <!-- Fonts: non-blocking async load -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap"></noscript>
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script type="module" crossorigin src="./assets/index-a3Ud--8j.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-BFU9W4F0.css">
-    <link rel="stylesheet" href="./twofactor.css?v=2">
+    <link rel="stylesheet" href="./twofactor.css?v=3">
   </head>
   <body class="min-h-full bg-[#09070f] text-[#f3f0fb] selection:bg-[#8b5cf6]/40 selection:text-white">
-    <div id="root">
-      <!-- Instant loader until React mounts -->
-      <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#09070f;font-family:system-ui,-apple-system,sans-serif;">
-        <div style="position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
-          <div style="width:68px;height:68px;border-radius:18px;background:linear-gradient(135deg,rgba(168,85,247,0.25),rgba(126,34,206,0.1));border:1px solid rgba(168,85,247,0.4);display:flex;align-items:center;justify-content:center;box-shadow:0 0 35px rgba(168,85,247,0.3);">
-            <img src="./favicon.png" alt="Logo" style="width:40px;height:40px;border-radius:8px;" />
-          </div>
-        </div>
-        <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:0.5px;margin-bottom:8px;">ShinyVisuals</div>
-        <div style="font-size:13px;color:#c084fc;opacity:0.85;display:flex;align-items:center;gap:8px;">
-          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#a855f7;"></span>
-          Загрузка сайта...
-        </div>
-      </div>
-    </div>
-    <script src="./twofactor.js?v=2"></script>
+    <div id="root"></div>
+    <script src="./twofactor.js?v=3"></script>
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js').catch(() => {});
-        });
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          for (let reg of regs) reg.unregister();
+        }).catch(function() {});
       }
     </script>
   </body>
