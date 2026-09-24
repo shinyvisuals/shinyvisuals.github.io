@@ -1,7 +1,8 @@
-﻿/**
+/**
  * ==========================================================================
  * ShinyVisuals / Palladium — Google Authenticator (2FA) Engine
  * Полноценная двухфакторная аутентификация TOTP (RFC 6238)
+ * Поддержка встраивания в модальное окно аккаунта и формы входа
  * ==========================================================================
  */
 
@@ -12,17 +13,47 @@
   const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
   // --------------------------------------------------------------------------
-  // 1. Хранилище настроек 2FA
+  // 1. Определение текущего пользователя и хранилище настроек 2FA
   // --------------------------------------------------------------------------
-  function get2FAConfig() {
+  function detectCurrentUsername() {
+    // 1. Проверяем localStorage пользователя
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (data) return JSON.parse(data);
+      const userStr = localStorage.getItem('shiny_current_user');
+      if (userStr) {
+        const u = JSON.parse(userStr);
+        if (u && (u.username || u.name)) return u.username || u.name;
+      }
+    } catch (e) {}
+
+    // 2. Проверяем открытое модальное окно профиля
+    try {
+      const h3s = document.querySelectorAll('h3');
+      for (let i = 0; i < h3s.length; i++) {
+        const txt = (h3s[i].textContent || '').trim();
+        if (txt && txt.length > 1 && !txt.includes(' ') && txt !== 'ShinyVisuals' && !txt.includes('Google')) {
+          return txt;
+        }
+      }
+    } catch (e) {}
+
+    return 'deathproblem';
+  }
+
+  function get2FAConfig(userOverride) {
+    const user = userOverride || detectCurrentUsername();
+    const userKey = 'shiny_2fa_' + (user ? user.toLowerCase() : 'default');
+    try {
+      const data = localStorage.getItem(userKey) || localStorage.getItem(STORAGE_KEY);
+      if (data) {
+        const parsed = JSON.parse(data);
+        parsed.username = user;
+        return parsed;
+      }
     } catch (e) {}
     return {
       enabled: false,
       secret: null,
-      username: 'User',
+      username: user,
       activatedAt: null,
       backupCodes: []
     };
@@ -30,6 +61,9 @@
 
   function save2FAConfig(cfg) {
     try {
+      const user = cfg.username || detectCurrentUsername();
+      const userKey = 'shiny_2fa_' + (user ? user.toLowerCase() : 'default');
+      localStorage.setItem(userKey, JSON.stringify(cfg));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
       // Dispatch custom event to notify all components
       window.dispatchEvent(new CustomEvent('shiny_2fa_changed', { detail: cfg }));
@@ -135,8 +169,8 @@
   function openGoogleAuthSetupModal() {
     closeActiveModal();
 
-    const cfg = get2FAConfig();
-    const username = cfg.username || 'Player';
+    const username = detectCurrentUsername();
+    const cfg = get2FAConfig(username);
     const secret = generateSecret(16);
     pendingSecret = secret;
 
@@ -157,7 +191,7 @@
             <span style="font-size:26px;">🛡️</span>
             <div>
               <h2>Google Authenticator (2FA)</h2>
-              <p style="margin:2px 0 0 0;font-size:12.5px;color:#c084fc;">Двухфакторная защита аккаунта</p>
+              <p style="margin:2px 0 0 0;font-size:12.5px;color:#c084fc;">Двухфакторная защита для ${username}</p>
             </div>
           </div>
           <button class="twofactor-close-btn" id="btn2faClose" title="Закрыть">✕</button>
@@ -176,7 +210,7 @@
             </div>
 
             <div style="font-size:12px;color:#e9d5ff;margin-bottom:6px;text-align:center;">
-              Или введите ключ вручную, если сканирование недоступно:
+              Или введите ключ вручную в Google Authenticator:
             </div>
             <div class="twofactor-secret-row">
               <span class="twofactor-secret-key" id="txtSecretKey">${formattedSecret}</span>
@@ -255,6 +289,7 @@
         const backupCodes = generateBackupCodes(4);
         cfg.enabled = true;
         cfg.secret = pendingSecret;
+        cfg.username = username;
         cfg.activatedAt = Date.now();
         cfg.backupCodes = backupCodes;
         save2FAConfig(cfg);
@@ -307,7 +342,8 @@
   function openDisable2FAModal() {
     closeActiveModal();
 
-    const cfg = get2FAConfig();
+    const username = detectCurrentUsername();
+    const cfg = get2FAConfig(username);
     const backdrop = document.createElement('div');
     backdrop.className = 'twofactor-modal-backdrop';
     backdrop.id = 'twofactorModal';
@@ -386,7 +422,7 @@
   function setupDigitBoxes(onComplete) {
     const boxes = document.querySelectorAll('.twofactor-digit-box');
     boxes.forEach((box, i) => {
-      box.addEventListener('input', (e) => {
+      box.addEventListener('input', () => {
         const val = box.value.replace(/\D/g, '');
         box.value = val ? val[0] : '';
         if (box.value && i < boxes.length - 1) {
@@ -441,76 +477,115 @@
   }
 
   // --------------------------------------------------------------------------
-  // 5. Встраивание в страницы сайта (account.html, login.html, etc.)
+  // 5. Встраивание 2FA прямо в модальное окно профиля (Account Modal)
   // --------------------------------------------------------------------------
-  function injectAccountWidget() {
-    // Check if on account page
-    const isAccount = window.location.pathname.includes('account') || document.title.includes('Account');
-    if (!isAccount) return;
+  function findModalRowsAnchor() {
+    const all = document.querySelectorAll('button, div, span, p');
 
-    let existing = document.getElementById('shiny2faWidget');
-    if (existing) existing.remove();
-
-    const cfg = get2FAConfig();
-    const widget = document.createElement('div');
-    widget.className = 'twofactor-card-widget';
-    widget.id = 'shiny2faWidget';
-
-    if (cfg.enabled) {
-      const dateStr = cfg.activatedAt ? new Date(cfg.activatedAt).toLocaleDateString('ru-RU') : 'Активно';
-      widget.innerHTML = `
-        <div class="twofactor-info-left">
-          <div class="twofactor-shield-icon" style="background:linear-gradient(135deg,rgba(34,197,94,0.25),rgba(22,101,52,0.45));border-color:rgba(34,197,94,0.4);box-shadow:0 0 20px rgba(34,197,94,0.25);">🛡️</div>
-          <div class="twofactor-text-group">
-            <h3>
-              <span>Google Authenticator</span>
-              <span class="twofactor-status-badge active">● Активно</span>
-            </h3>
-            <p>Двухфакторная защита включена (${dateStr}). Вход защищён одноразовыми кодами.</p>
-          </div>
-        </div>
-        <div>
-          <button class="twofactor-btn-danger" id="btnTriggerDisable2FA">Отключить 2FA</button>
-        </div>
-      `;
-    } else {
-      widget.innerHTML = `
-        <div class="twofactor-info-left">
-          <div class="twofactor-shield-icon">🛡️</div>
-          <div class="twofactor-text-group">
-            <h3>
-              <span>Двухфакторная аутентификация</span>
-              <span class="twofactor-status-badge inactive">Отключено</span>
-            </h3>
-            <p>Защитите свой аккаунт от взлома с помощью приложения Google Authenticator на смартфоне.</p>
-          </div>
-        </div>
-        <div>
-          <button class="twofactor-btn-primary" id="btnTriggerEnable2FA">
-            <span>⚡ Подключить Google Authenticator</span>
-          </button>
-        </div>
-      `;
-    }
-
-    // Insert widget into page content
-    const mainContainer = document.querySelector('main') || document.querySelector('.max-w-6xl') || document.querySelector('.container') || document.body;
-    if (mainContainer) {
-      if (mainContainer === document.body) {
-        widget.style.maxWidth = '900px';
-        widget.style.margin = '30px auto';
+    // Поиск по кнопке "Сменить пароль"
+    for (let i = 0; i < all.length; i++) {
+      const el = all[i];
+      if (el.children.length === 0) {
+        const txt = (el.textContent || '').trim();
+        if (txt === 'Сменить пароль' || txt === 'Change Password') {
+          const btn = el.closest('button');
+          if (btn && btn.parentElement) {
+            return { el: btn.parentElement, pos: 'afterend' };
+          }
+        }
       }
-      mainContainer.prepend(widget);
     }
 
-    // Attach listeners
-    const btnEnable = document.getElementById('btnTriggerEnable2FA');
-    if (btnEnable) btnEnable.onclick = openGoogleAuthSetupModal;
+    // Поиск по блоку "HWID"
+    for (let i = 0; i < all.length; i++) {
+      const el = all[i];
+      if (el.children.length === 0 && (el.textContent || '').includes('HWID')) {
+        const row = el.closest('div');
+        if (row && row.parentElement) {
+          return { el: row, pos: 'afterend' };
+        }
+      }
+    }
 
-    const btnDisable = document.getElementById('btnTriggerDisable2FA');
-    if (btnDisable) btnDisable.onclick = openDisable2FAModal;
+    return null;
   }
 
+  function updateAccountModalRowContent(row, cfg) {
+    const rightSide = row.querySelector('#shiny2faModalRight');
+    const desc = row.querySelector('.shiny-2fa-desc');
+    if (!rightSide) return;
+
+    if (cfg.enabled) {
+      if (desc) desc.textContent = 'Двухфакторная защита активна';
+      rightSide.innerHTML = `
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="shiny-2fa-badge-active">
+            <span class="shiny-2fa-dot-active"></span>
+            Активно
+          </span>
+          <button type="button" class="shiny-2fa-action-btn disable" id="btnRow2FADisable">Отключить</button>
+        </div>
+      `;
+      const btnDis = rightSide.querySelector('#btnRow2FADisable');
+      if (btnDis) {
+        btnDis.onclick = (e) => {
+          e.stopPropagation();
+          openDisable2FAModal();
+        };
+      }
+      row.onclick = () => openDisable2FAModal();
+    } else {
+      if (desc) desc.textContent = 'Дополнительная защита аккаунта';
+      rightSide.innerHTML = `
+        <button type="button" class="shiny-2fa-action-btn setup" id="btnRow2FASetup">Подключить</button>
+      `;
+      const btnSet = rightSide.querySelector('#btnRow2FASetup');
+      if (btnSet) {
+        btnSet.onclick = (e) => {
+          e.stopPropagation();
+          openGoogleAuthSetupModal();
+        };
+      }
+      row.onclick = () => openGoogleAuthSetupModal();
+    }
+  }
+
+  function injectAccountModalRow() {
+    const anchor = findModalRowsAnchor();
+    if (!anchor) return;
+
+    const existing = document.getElementById('shiny2faModalRow');
+    const cfg = get2FAConfig();
+
+    if (existing) {
+      if (existing.previousElementSibling === anchor.el) {
+        updateAccountModalRowContent(existing, cfg);
+        return;
+      }
+      existing.remove();
+    }
+
+    const row = document.createElement('div');
+    row.id = 'shiny2faModalRow';
+    row.className = 'shiny-2fa-modal-row';
+    row.innerHTML = `
+      <div class="shiny-2fa-modal-left">
+        <span class="shiny-2fa-icon">🛡️</span>
+        <div class="shiny-2fa-text">
+          <span class="shiny-2fa-title">Google Authenticator (2FA)</span>
+          <span class="shiny-2fa-desc">Дополнительная защита аккаунта</span>
+        </div>
+      </div>
+      <div class="shiny-2fa-modal-right" id="shiny2faModalRight"></div>
+    `;
+
+    updateAccountModalRowContent(row, cfg);
+    anchor.el.insertAdjacentElement(anchor.pos, row);
+  }
+
+  // --------------------------------------------------------------------------
+  // 6. Плавающая кнопка быстрого доступа (в углу)
+  // --------------------------------------------------------------------------
   function injectFloatingSecurityButton() {
     let btn = document.getElementById('shiny2faFloatingBtn');
     if (btn) btn.remove();
@@ -537,26 +612,37 @@
     document.body.appendChild(btn);
   }
 
+  // --------------------------------------------------------------------------
+  // 7. Перехват формы авторизации (Login Protection)
+  // --------------------------------------------------------------------------
   function hookLoginForm() {
-    const isLogin = window.location.pathname.includes('login') || document.title.includes('Login');
-    if (!isLogin) return;
+    document.addEventListener('submit', (e) => {
+      const form = e.target;
+      if (!form || form.tagName !== 'FORM') return;
 
-    const form = document.querySelector('form');
-    if (!form) return;
+      const userInp = form.querySelector('input[type="text"], input[name="username"], input[placeholder*="логин" i], input[placeholder*="ник" i], input[placeholder*="username" i]');
+      const passInp = form.querySelector('input[type="password"]');
 
-    form.addEventListener('submit', (e) => {
-      const cfg = get2FAConfig();
-      if (cfg.enabled && cfg.secret) {
-        e.preventDefault();
-        promptLogin2FA(() => {
-          form.submit();
-        });
+      if (userInp && passInp && !form.dataset.twofactorVerified) {
+        const username = userInp.value.trim();
+        const cfg = get2FAConfig(username);
+
+        if (cfg.enabled && cfg.secret) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          promptLogin2FA(cfg, () => {
+            form.dataset.twofactorVerified = 'true';
+            const submitBtn = form.querySelector('button[type="submit"]') || form.querySelector('button');
+            if (submitBtn) submitBtn.click();
+            else form.submit();
+          });
+        }
       }
-    });
+    }, true);
   }
 
-  function promptLogin2FA(onSuccess) {
-    const cfg = get2FAConfig();
+  function promptLogin2FA(cfg, onSuccess) {
     const backdrop = document.createElement('div');
     backdrop.className = 'twofactor-modal-backdrop';
     backdrop.id = 'twofactorModal';
@@ -575,7 +661,7 @@
         </div>
 
         <p style="font-size:14px;color:#e9d5ff;margin:0 0 16px 0;line-height:1.5;">
-          Введите 6-значный код из Google Authenticator для входа в аккаунт:
+          Введите 6-значный код из Google Authenticator для входа в аккаунт <strong>${cfg.username}</strong>:
         </p>
 
         <div class="twofactor-input-container">
@@ -622,19 +708,25 @@
   }
 
   function refreshUI() {
-    injectAccountWidget();
+    injectAccountModalRow();
     injectFloatingSecurityButton();
   }
 
   // --------------------------------------------------------------------------
-  // 6. Инициализация при загрузке страницы
+  // 8. Инициализация и наблюдатель за DOM
   // --------------------------------------------------------------------------
   window.addEventListener('DOMContentLoaded', () => {
     refreshUI();
     hookLoginForm();
-    // React / Next.js hydration delay check
-    setTimeout(refreshUI, 600);
-    setTimeout(refreshUI, 1500);
+
+    // Наблюдатель за DOM для моментального внедрения в модальное окно при его открытии
+    const observer = new MutationObserver(() => {
+      injectAccountModalRow();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Таймер резервной проверки (300 мс)
+    setInterval(injectAccountModalRow, 300);
   });
 
   window.addEventListener('shiny_2fa_changed', refreshUI);
