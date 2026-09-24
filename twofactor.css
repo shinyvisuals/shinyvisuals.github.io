@@ -1,0 +1,435 @@
+/* ==========================================================================
+   ShinyVisuals / Palladium — Google Authenticator (2FA) Stylesheet
+   Фиолетово-темный премиум дизайн с эффектом стеклянного размытия
+   ========================================================================== */
+
+/* Кнопка и виджет в профиле / на странице */
+.twofactor-card-widget {
+  background: rgba(18, 7, 36, 0.85);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  box-shadow: 0 8px 32px rgba(11, 2, 23, 0.65), 0 0 15px rgba(168, 85, 247, 0.15);
+  border-radius: 16px;
+  padding: 22px 26px;
+  margin: 20px 0;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.twofactor-card-widget:hover {
+  border-color: rgba(192, 132, 252, 0.6);
+  box-shadow: 0 10px 40px rgba(11, 2, 23, 0.8), 0 0 25px rgba(168, 85, 247, 0.25);
+}
+
+.twofactor-info-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.twofactor-shield-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(126, 34, 206, 0.45));
+  border: 1px solid rgba(192, 132, 252, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+}
+
+.twofactor-text-group h3 {
+  margin: 0 0 4px 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.twofactor-text-group p {
+  margin: 0;
+  font-size: 13.5px;
+  color: #e9d5ff;
+  opacity: 0.85;
+}
+
+.twofactor-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.twofactor-status-badge.active {
+  background: rgba(34, 197, 94, 0.16);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #4ade80;
+}
+
+.twofactor-status-badge.inactive {
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.twofactor-btn-primary {
+  background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 18px rgba(168, 85, 247, 0.4);
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.twofactor-btn-primary:hover {
+  background: linear-gradient(135deg, #c084fc 0%, #9333ea 100%);
+  box-shadow: 0 6px 24px rgba(168, 85, 247, 0.6);
+  transform: translateY(-1px);
+}
+
+.twofactor-btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.twofactor-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #ffffff;
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+/* Модальное окно Google Authenticator */
+.twofactor-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(6, 2, 13, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: twofactorFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes twofactorFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.twofactor-modal-box {
+  background: linear-gradient(180deg, rgba(24, 10, 48, 0.96) 0%, rgba(14, 5, 28, 0.98) 100%);
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  box-shadow: 0 25px 65px rgba(0, 0, 0, 0.85), 0 0 35px rgba(168, 85, 247, 0.28);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  color: #ffffff;
+  padding: 30px;
+  animation: twofactorScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes twofactorScaleIn {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.twofactor-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.twofactor-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.twofactor-header-title h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.twofactor-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e9d5ff;
+  font-size: 18px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.twofactor-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+/* Шаги настройки */
+.twofactor-step-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.twofactor-step-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #c084fc;
+  margin-bottom: 10px;
+}
+
+.twofactor-step-num {
+  background: rgba(168, 85, 247, 0.3);
+  border: 1px solid rgba(168, 85, 247, 0.6);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #ffffff;
+}
+
+/* QR код */
+.twofactor-qr-wrapper {
+  background: #ffffff;
+  padding: 14px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px auto;
+  width: 200px;
+  height: 200px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.twofactor-qr-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Секретный ключ */
+.twofactor-secret-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.twofactor-secret-key {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13.5px;
+  color: #f3e8ff;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  flex: 1;
+  user-select: all;
+  text-align: center;
+}
+
+.twofactor-copy-btn {
+  background: rgba(168, 85, 247, 0.25);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  color: #ffffff;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.twofactor-copy-btn:hover {
+  background: rgba(168, 85, 247, 0.5);
+}
+
+/* 6-значный ввод */
+.twofactor-input-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.twofactor-digit-box {
+  width: 44px;
+  height: 52px;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  background: rgba(13, 4, 25, 0.85);
+  border: 1.5px solid rgba(168, 85, 247, 0.4);
+  border-radius: 10px;
+  color: #ffffff;
+  outline: none;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.twofactor-digit-box:focus {
+  border-color: #c084fc;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.6), inset 0 2px 5px rgba(0, 0, 0, 0.5);
+  background: rgba(24, 8, 48, 0.95);
+  transform: translateY(-2px);
+}
+
+.twofactor-digit-divider {
+  color: #c084fc;
+  font-weight: 700;
+  font-size: 20px;
+  user-select: none;
+}
+
+.twofactor-error-msg {
+  color: #f87171;
+  font-size: 13px;
+  text-align: center;
+  margin: 8px 0;
+  display: none;
+}
+
+.twofactor-submit-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 12px 0;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
+  transition: all 0.25s ease;
+  margin-top: 6px;
+}
+
+.twofactor-submit-btn:hover {
+  background: linear-gradient(135deg, #c084fc 0%, #9333ea 100%);
+  box-shadow: 0 6px 28px rgba(168, 85, 247, 0.6);
+  transform: translateY(-1px);
+}
+
+/* Экран успеха и резервные коды */
+.twofactor-success-box {
+  text-align: center;
+  padding: 10px 0;
+}
+
+.twofactor-success-icon {
+  font-size: 48px;
+  color: #4ade80;
+  margin-bottom: 12px;
+  animation: twofactorPulse 1.5s infinite;
+}
+
+@keyframes twofactorPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+.twofactor-backup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 10px;
+  padding: 14px;
+  margin: 16px 0;
+}
+
+.twofactor-backup-code {
+  font-family: monospace;
+  font-size: 13.5px;
+  color: #e9d5ff;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 6px 8px;
+  border-radius: 6px;
+  user-select: all;
+}
+
+/* Плавающая кнопка быстрого вызова 2FA в углу экрана */
+.twofactor-float-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99999;
+  background: linear-gradient(135deg, rgba(28, 10, 56, 0.95), rgba(18, 6, 36, 0.95));
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(168, 85, 247, 0.35);
+  color: #ffffff;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+}
+
+.twofactor-float-btn:hover {
+  border-color: #c084fc;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.75), 0 0 28px rgba(168, 85, 247, 0.55);
+  transform: translateY(-2px);
+}
