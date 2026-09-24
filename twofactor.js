@@ -477,33 +477,33 @@
   }
 
   // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
   // 5. Встраивание 2FA прямо в модальное окно профиля (Account Modal)
   // --------------------------------------------------------------------------
-  function findModalRowsAnchor() {
-    const all = document.querySelectorAll('button, div, span, p');
+  let isInjecting = false;
 
-    // Поиск по кнопке "Сменить пароль"
-    for (let i = 0; i < all.length; i++) {
-      const el = all[i];
-      if (el.children.length === 0) {
-        const txt = (el.textContent || '').trim();
-        if (txt === 'Сменить пароль' || txt === 'Change Password') {
-          const btn = el.closest('button');
-          if (btn && btn.parentElement) {
-            return { el: btn.parentElement, pos: 'afterend' };
-          }
+  function findModalRowsAnchor() {
+    // 1. Быстрая проверка: если модального окна нет в DOM, выходим моментально (0 мс)
+    const modal = document.querySelector('.max-w-md, [role="dialog"]');
+    if (!modal) return null;
+
+    // 2. Ищем кнопку "Сменить пароль" только внутри самого модального окна
+    const buttons = modal.querySelectorAll('button');
+    for (let i = 0; i < buttons.length; i++) {
+      const btn = buttons[i];
+      const txt = (btn.textContent || '').trim();
+      if (txt.includes('Сменить пароль') || txt.includes('Change Password')) {
+        if (btn.parentElement) {
+          return { el: btn.parentElement, pos: 'afterend', modal: modal };
         }
       }
     }
 
-    // Поиск по блоку "HWID"
-    for (let i = 0; i < all.length; i++) {
-      const el = all[i];
-      if (el.children.length === 0 && (el.textContent || '').includes('HWID')) {
-        const row = el.closest('div');
-        if (row && row.parentElement) {
-          return { el: row, pos: 'afterend' };
-        }
+    // 3. Резервный поиск по HWID
+    const divs = modal.querySelectorAll('div');
+    for (let i = 0; i < divs.length; i++) {
+      if ((divs[i].textContent || '').includes('HWID')) {
+        return { el: divs[i], pos: 'afterend', modal: modal };
       }
     }
 
@@ -514,6 +514,13 @@
     const rightSide = row.querySelector('#shiny2faModalRight');
     const desc = row.querySelector('.shiny-2fa-desc');
     if (!rightSide) return;
+
+    const stateKey = cfg.enabled ? 'active' : 'inactive';
+    // Защита от бесконечного цикла мутаций: если состояние уже установлено, ничего не перерисовываем
+    if (row.dataset.state === stateKey) {
+      return;
+    }
+    row.dataset.state = stateKey;
 
     if (cfg.enabled) {
       if (desc) desc.textContent = 'Двухфакторная защита активна';
@@ -551,36 +558,43 @@
   }
 
   function injectAccountModalRow() {
-    const anchor = findModalRowsAnchor();
-    if (!anchor) return;
+    if (isInjecting) return;
+    isInjecting = true;
 
-    const existing = document.getElementById('shiny2faModalRow');
-    const cfg = get2FAConfig();
+    try {
+      const anchor = findModalRowsAnchor();
+      if (!anchor) return;
 
-    if (existing) {
-      if (existing.previousElementSibling === anchor.el) {
-        updateAccountModalRowContent(existing, cfg);
-        return;
+      const existing = document.getElementById('shiny2faModalRow');
+      const cfg = get2FAConfig();
+
+      if (existing) {
+        if (existing.previousElementSibling === anchor.el) {
+          updateAccountModalRowContent(existing, cfg);
+          return;
+        }
+        existing.remove();
       }
-      existing.remove();
-    }
 
-    const row = document.createElement('div');
-    row.id = 'shiny2faModalRow';
-    row.className = 'shiny-2fa-modal-row';
-    row.innerHTML = `
-      <div class="shiny-2fa-modal-left">
-        <span class="shiny-2fa-icon">🛡️</span>
-        <div class="shiny-2fa-text">
-          <span class="shiny-2fa-title">Google Authenticator (2FA)</span>
-          <span class="shiny-2fa-desc">Дополнительная защита аккаунта</span>
+      const row = document.createElement('div');
+      row.id = 'shiny2faModalRow';
+      row.className = 'shiny-2fa-modal-row';
+      row.innerHTML = `
+        <div class="shiny-2fa-modal-left">
+          <span class="shiny-2fa-icon">🛡️</span>
+          <div class="shiny-2fa-text">
+            <span class="shiny-2fa-title">Google Authenticator (2FA)</span>
+            <span class="shiny-2fa-desc">Дополнительная защита аккаунта</span>
+          </div>
         </div>
-      </div>
-      <div class="shiny-2fa-modal-right" id="shiny2faModalRight"></div>
-    `;
+        <div class="shiny-2fa-modal-right" id="shiny2faModalRight"></div>
+      `;
 
-    updateAccountModalRowContent(row, cfg);
-    anchor.el.insertAdjacentElement(anchor.pos, row);
+      updateAccountModalRowContent(row, cfg);
+      anchor.el.insertAdjacentElement(anchor.pos, row);
+    } finally {
+      isInjecting = false;
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -713,20 +727,41 @@
   }
 
   // --------------------------------------------------------------------------
-  // 8. Инициализация и наблюдатель за DOM
+  // 8. Инициализация и легковесный наблюдатель за DOM
   // --------------------------------------------------------------------------
   window.addEventListener('DOMContentLoaded', () => {
     refreshUI();
     hookLoginForm();
 
-    // Наблюдатель за DOM для моментального внедрения в модальное окно при его открытии
-    const observer = new MutationObserver(() => {
-      injectAccountModalRow();
+    // Защищённый от зацикливания и троттлированный наблюдатель через requestAnimationFrame
+    let rafId = null;
+    const observer = new MutationObserver((mutations) => {
+      let relevant = false;
+      for (let i = 0; i < mutations.length; i++) {
+        const t = mutations[i].target;
+        if (t && t.id !== 'shiny2faModalRow' && t.id !== 'shiny2faModalRight') {
+          relevant = true;
+          break;
+        }
+      }
+      if (!relevant) return;
+
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          rafId = null;
+          injectAccountModalRow();
+        });
+      }
     });
+
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // Таймер резервной проверки (300 мс)
-    setInterval(injectAccountModalRow, 300);
+    // Проверка только если модальное окно открыто
+    setInterval(() => {
+      if (document.querySelector('.max-w-md, [role="dialog"]')) {
+        injectAccountModalRow();
+      }
+    }, 1000);
   });
 
   window.addEventListener('shiny_2fa_changed', refreshUI);
