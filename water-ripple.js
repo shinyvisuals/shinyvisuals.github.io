@@ -2,7 +2,7 @@
  * ============================================================================
  * ShinyVisuals — Interactive Water Surface & Ripple Shader
  * Реалистичный шейдер водной глади при движении пальца / мыши по экрану
- * Поддержка WebGL 1/2 с красивой каустикой, бликами и переливами
+ * Высокопроизводительный WebGL 1/2 с красивой каустикой, бликами и переливами
  * ============================================================================
  */
 
@@ -15,7 +15,19 @@
   const MAX_RIPPLES = 48;
   const ripples = [];
   let rippleId = 0;
+  let isRunning = false;
+  let animFrameId = null;
+  let lastX = -1;
+  let lastY = -1;
+  let lastSpawnTime = 0;
+  let isPointerDown = false;
+  const startTime = performance.now();
 
+  function getTimeSec() {
+    return (performance.now() - startTime) / 1000.0;
+  }
+
+  // Создание холста
   const canvas = document.createElement('canvas');
   canvas.id = 'shiny-water-canvas';
   canvas.style.cssText = [
@@ -42,7 +54,7 @@
     mountCanvas();
   }
 
-  // Попытка инициализации WebGL
+  // Инициализация WebGL
   let gl = canvas.getContext('webgl', { alpha: true, antialias: true, premultipliedAlpha: false, depth: false }) ||
            canvas.getContext('experimental-webgl', { alpha: true, antialias: true, premultipliedAlpha: false, depth: false });
 
@@ -68,7 +80,6 @@
     varying vec2 v_uv;
     uniform float u_time;
     uniform float u_aspect;
-    uniform vec2 u_resolution;
 
     #define MAX_R 48
     uniform vec4 u_ripples[MAX_R]; // x, y (0..1), birthTime, strength
@@ -76,123 +87,111 @@
 
     void main() {
       vec2 uv = v_uv;
-      uv.y = 1.0 - uv.y; // ориентация сверху вниз
+      uv.y = 1.0 - uv.y; // Y идет сверху вниз, как в координатах мыши
 
       float totalHeight = 0.0;
       vec2 totalSlope = vec2(0.0);
 
-      const float waveSpeed = 0.44;    // Скорость расхождения кругов по воде
-      const float waveFreq  = 54.0;    // Частота волн (крутизна гребней)
-      const float waveWidth = 0.024;   // Ширина волнового пакета
-      const float decayRate = 1.25;    // Затухание энергии со временем
-      const float maxAge    = 2.4;     // Время жизни волны в секундах
+      const float waveSpeed = 0.34;    // Скорость расхождения волны
+      const float waveFreq  = 44.0;    // Частота гребней
+      const float maxAge    = 2.2;     // Время жизни волны
 
       for (int i = 0; i < MAX_R; i++) {
-        if (i >= u_count) break;
-
+        float activeFlag = step(float(i) + 0.5, float(u_count));
         vec4 r = u_ripples[i];
         float age = u_time - r.z;
-        if (age < 0.0 || age > maxAge) continue;
 
-        vec2 diff = uv - r.xy;
-        diff.x *= u_aspect;
-        float dist = length(diff);
+        if (age >= 0.0 && age <= maxAge) {
+          vec2 diff = uv - r.xy;
+          diff.x *= u_aspect;
+          float dist = length(diff);
 
-        float front = age * waveSpeed;
-        float delta = dist - front;
+          float front = age * waveSpeed;
+          float delta = dist - front;
 
-        // Волновой пакет Гаусса вокруг фронта волны
-        float envelope = exp(-(delta * delta) / (2.0 * waveWidth * waveWidth));
-        // Затухание волны со временем и с расстоянием (закон сохранения энергии волн на воде 1/sqrt(r))
-        float timeDecay = exp(-age * decayRate);
-        float geomDecay = 1.0 / sqrt(dist * 6.0 + 0.12);
+          // Волновой пакет: 2-3 красивых концентрических кольца
+          float env = exp(-(delta * delta) / (2.0 * 0.032 * 0.032));
+          // Плавное затухание к концу жизни
+          float timeDecay = pow(max(0.0, 1.0 - age / maxAge), 1.5);
+          float geomDecay = 1.0 / sqrt(dist * 3.5 + 0.25);
 
-        float amp = r.w * envelope * timeDecay * geomDecay;
+          float amp = r.w * env * timeDecay * geomDecay * activeFlag * 0.35;
 
-        // Колебание волны (синусоида)
-        float phase = delta * waveFreq;
-        float s = sin(phase);
-        float c = cos(phase);
+          // Синусоидальные гребни
+          float phase = delta * waveFreq;
+          float s = sin(phase);
+          float c = cos(phase);
 
-        totalHeight += amp * s;
+          totalHeight += amp * s;
 
-        // Радиальный градиент уклона поверхности
-        vec2 dir = (dist > 0.0001) ? (diff / dist) : vec2(0.0);
-        float dH = amp * (waveFreq * c - (delta / (waveWidth * waveWidth)) * s);
-        totalSlope += dir * dH;
+          vec2 dir = (dist > 0.0001) ? (diff / dist) : vec2(0.0);
+          float dH = amp * (waveFreq * c - (delta / 0.001) * s);
+          totalSlope += dir * dH;
+        }
       }
 
+      // Мягкое ограничение высоты волн при наложении
+      totalHeight = totalHeight / (1.0 + abs(totalHeight) * 0.5);
       float slopeMag = length(totalSlope);
       float hMag = abs(totalHeight);
 
-      // Если в данной точке вода спокойна — отсекаем пиксель
-      if (slopeMag < 0.0004 && hMag < 0.0004) {
+      // Полная прозрачность спокойной воды
+      if (slopeMag < 0.0003 && hMag < 0.0003) {
         discard;
       }
 
-      // Нормаль к искривленной водной поверхности
-      float normalStrength = 2.4;
-      vec3 normal = normalize(vec3(-totalSlope.x * normalStrength, -totalSlope.y * normalStrength, 0.4));
-
-      // Источники освещения
-      // Основной верхне-левый свет (создает яркие солнечные блики)
-      vec3 light1 = normalize(vec3(-0.35, 0.65, 0.70));
+      // Реалистичная нормаль к поверхности воды
+      vec3 normal = normalize(vec3(-totalSlope * 0.045, 1.0));
       vec3 viewDir = vec3(0.0, 0.0, 1.0);
+
+      // Освещение (основной верхний свет для бликов)
+      vec3 light1 = normalize(vec3(-0.35, 0.60, 0.70));
       vec3 half1 = normalize(light1 + viewDir);
 
-      // Вторичный контровой свет (подсвечивает противоположный край волны)
-      vec3 light2 = normalize(vec3(0.45, -0.40, 0.65));
+      vec3 light2 = normalize(vec3(0.40, -0.40, 0.80));
       vec3 half2 = normalize(light2 + viewDir);
 
-      // Блики (Specular & Diamond Glint)
+      // Острые бриллиантовые блики на гребнях воды (как на солнце)
       float NdotH1 = max(0.0, dot(normal, half1));
-      float spec1  = pow(NdotH1, 32.0);
-      float glint1 = pow(NdotH1, 110.0) * 2.2;
+      float spec1  = pow(NdotH1, 40.0);
+      float glint1 = pow(NdotH1, 140.0) * 2.5;
 
       float NdotH2 = max(0.0, dot(normal, half2));
-      float spec2  = pow(NdotH2, 18.0);
+      float spec2  = pow(NdotH2, 28.0) * 0.6;
 
-      // Эффект Френеля (повышенное отражение под скользящим углом)
-      float fresnel = pow(1.0 - max(0.0, dot(normal, viewDir)), 2.8);
+      // Эффект Френеля (усиление отражений на изгибах волн)
+      float fresnel = pow(1.0 - max(0.0, dot(normal, viewDir)), 3.0);
 
-      // Каустические полосы на гребнях волн
-      float crest = clamp(totalHeight * 5.0, 0.0, 1.0);
-      float caustic = pow(crest, 2.0) * 1.6;
+      // Каустические полосы света на гребне волны
+      float crest = smoothstep(0.05, 0.75, totalHeight);
+      float caustic = pow(crest, 2.2) * 1.8;
 
-      // Палитра воды в фирменном стиле ShinyVisuals:
-      // Белоснежный бриллиантовый блик солнца
-      vec3 colWhite  = vec3(1.0, 1.0, 1.0);
-      // Яркий лазурно-бирюзовый гребень воды (#38bdf8)
-      vec3 colCyan   = vec3(0.24, 0.82, 1.0);
-      // Насыщенный неоново-фиолетовый перелив (#a855f7)
-      vec3 colViolet = vec3(0.68, 0.36, 1.0);
-      // Глубокий оттенок воды (#1e1035)
-      vec3 colDeep   = vec3(0.32, 0.16, 0.58);
+      // Палитра воды в стиле ShinyVisuals:
+      vec3 colWhite  = vec3(1.0, 1.0, 1.0);         // Чистый белый блик
+      vec3 colCyan   = vec3(0.22, 0.85, 1.0);       // Лазурный гребень волны (#38bdf8)
+      vec3 colViolet = vec3(0.70, 0.38, 1.0);       // Неоново-фиолетовый перелив (#a855f7)
 
-      // Перелив цвета в зависимости от направления нормали
       vec3 shimmer = mix(colViolet, colCyan, normal.x * 0.5 + 0.5);
 
       vec3 finalCol = vec3(0.0);
       finalCol += colWhite * glint1;
-      finalCol += shimmer * (spec1 * 1.25 + spec2 * 0.45);
+      finalCol += shimmer * (spec1 * 1.3 + spec2);
       finalCol += colCyan * caustic;
-      finalCol += colViolet * (slopeMag * 1.8 + fresnel * 0.5);
-      finalCol += colDeep * clamp(-totalHeight * 2.5, 0.0, 0.5);
+      finalCol += colViolet * (fresnel * 0.6 + slopeMag * 0.12);
 
-      // Прозрачность: яркие волны четко видны, спокойная вода прозрачна
+      // Прозрачность: вода прозрачна, видны только четкие кольца и блики волн
       float alpha = clamp(
         glint1 * 1.0 +
-        spec1 * 0.9 +
-        spec2 * 0.4 +
-        caustic * 0.8 +
-        slopeMag * 2.5 +
-        fresnel * 0.4,
+        spec1 * 0.80 +
+        spec2 * 0.40 +
+        caustic * 0.70 +
+        fresnel * 0.45 +
+        slopeMag * 0.15,
         0.0,
-        0.96
+        0.90
       );
 
-      // Мягкое сглаживание по краям
-      float edgeMask = smoothstep(0.0004, 0.0035, slopeMag + hMag);
+      float edgeMask = smoothstep(0.0003, 0.002, slopeMag + hMag);
       alpha *= edgeMask;
       finalCol *= edgeMask;
 
@@ -250,16 +249,11 @@
 
   const uTimeLoc       = gl.getUniformLocation(program, 'u_time');
   const uAspectLoc     = gl.getUniformLocation(program, 'u_aspect');
-  const uResolutionLoc = gl.getUniformLocation(program, 'u_resolution');
-  const uRipplesLoc    = gl.getUniformLocation(program, 'u_ripples');
+  // gl.getUniformLocation с [0] для 100% совместимости
+  const uRipplesLoc    = gl.getUniformLocation(program, 'u_ripples[0]') || gl.getUniformLocation(program, 'u_ripples');
   const uCountLoc      = gl.getUniformLocation(program, 'u_count');
 
   const rippleData = new Float32Array(MAX_RIPPLES * 4);
-  const startTime = performance.now();
-
-  function getTimeSec() {
-    return (performance.now() - startTime) / 1000.0;
-  }
 
   function addRipple(normX, normY, strength) {
     const t = getTimeSec();
@@ -268,7 +262,7 @@
       x: Math.max(0.0, Math.min(1.0, normX)),
       y: Math.max(0.0, Math.min(1.0, normY)),
       time: t,
-      strength: strength || 0.45
+      strength: strength || 0.55
     });
 
     if (ripples.length > MAX_RIPPLES) {
@@ -293,12 +287,6 @@
   window.addEventListener('resize', resize, { passive: true });
   resize();
 
-  let isRunning = false;
-  let lastX = -1;
-  let lastY = -1;
-  let lastSpawnTime = 0;
-  let isPointerDown = false;
-
   function handleInputMove(clientX, clientY, isDown) {
     const now = performance.now();
     const nx = clientX / window.innerWidth;
@@ -308,28 +296,31 @@
       const dx = (nx - lastX) * (window.innerWidth / window.innerHeight);
       const dy = ny - lastY;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      const dt = Math.max(1, now - lastSpawnTime);
-      const speed = Math.min(dist / (dt / 1000), 4.0);
+      const dt = now - lastSpawnTime;
 
-      // Если мышь или палец сдвинулись хотя бы на пару миллиметров
-      if (dist > 0.008 || (dist > 0.003 && now - lastSpawnTime > 30)) {
-        const steps = Math.min(Math.max(Math.floor(dist / 0.016), 1), 4);
-        const baseStrength = isDown ? 0.65 : 0.42;
-        const strength = Math.min(baseStrength * (0.8 + speed * 0.35), 0.95);
+      // Ограничение частоты создания волн (не чаще ~18 в сек при движении)
+      const minInterval = 50; // мс
+      const minDist = 0.022;
 
-        for (let i = 1; i <= steps; i++) {
-          const ratio = i / steps;
-          const ix = lastX + (nx - lastX) * ratio;
-          const iy = lastY + (ny - lastY) * ratio;
-          addRipple(ix, iy, strength);
+      if ((dist >= minDist && dt >= 35) || (dt >= minInterval && dist >= 0.012)) {
+        const speed = Math.min(dist / (Math.max(1, dt) / 1000), 4.0);
+        const baseStrength = isDown ? 0.80 : 0.55;
+        const strength = Math.min(baseStrength * (0.85 + speed * 0.25), 0.98);
+
+        // При быстром взмахе добавляем промежуточную точку, чтобы не было разрывов
+        if (dist > 0.06) {
+          const midX = (lastX + nx) * 0.5;
+          const midY = (lastY + ny) * 0.5;
+          addRipple(midX, midY, strength * 0.85);
         }
 
+        addRipple(nx, ny, strength);
         lastX = nx;
         lastY = ny;
         lastSpawnTime = now;
       }
     } else {
-      addRipple(nx, ny, isDown ? 0.75 : 0.45);
+      addRipple(nx, ny, isDown ? 0.85 : 0.55);
       lastX = nx;
       lastY = ny;
       lastSpawnTime = now;
@@ -344,9 +335,8 @@
     lastX = nx;
     lastY = ny;
     lastSpawnTime = performance.now();
-    // Яркий всплеск с несколькими кольцами волн при клике/тапе
-    addRipple(nx, ny, 0.85);
-    setTimeout(() => addRipple(nx, ny, 0.55), 70);
+    addRipple(nx, ny, 0.90);
+    setTimeout(() => addRipple(nx, ny, 0.60), 60);
   }, { passive: true });
 
   window.addEventListener('pointermove', (e) => {
@@ -365,14 +355,7 @@
     lastY = -1;
   }, { passive: true });
 
-  // Touch Events (надежная поддержка для всех смартфонов и планшетов)
-  window.addEventListener('touchmove', (e) => {
-    if (e.touches && e.touches.length > 0) {
-      const t = e.touches[0];
-      handleInputMove(t.clientX, t.clientY, true);
-    }
-  }, { passive: true });
-
+  // Touch Events (для максимальной совместимости с мобильными браузерами)
   window.addEventListener('touchstart', (e) => {
     if (e.touches && e.touches.length > 0) {
       const t = e.touches[0];
@@ -381,8 +364,15 @@
       lastX = nx;
       lastY = ny;
       lastSpawnTime = performance.now();
-      addRipple(nx, ny, 0.85);
-      setTimeout(() => addRipple(nx, ny, 0.55), 70);
+      addRipple(nx, ny, 0.90);
+      setTimeout(() => addRipple(nx, ny, 0.60), 60);
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (e) => {
+    if (e.touches && e.touches.length > 0) {
+      const t = e.touches[0];
+      handleInputMove(t.clientX, t.clientY, true);
     }
   }, { passive: true });
 
@@ -394,15 +384,15 @@
   function wakeUp() {
     if (!isRunning) {
       isRunning = true;
-      requestAnimationFrame(tick);
+      animFrameId = requestAnimationFrame(tick);
     }
   }
 
   function tick() {
     const curTime = getTimeSec();
 
-    // Очищаем устаревшие волны (> 2.4 сек)
-    while (ripples.length > 0 && curTime - ripples[0].time > 2.4) {
+    // Очищаем устаревшие волны (> 2.6 сек)
+    while (ripples.length > 0 && curTime - ripples[0].time > 2.6) {
       ripples.shift();
     }
 
@@ -413,7 +403,6 @@
       return;
     }
 
-    // Заполняем массив данных для передачи в шейдер
     const count = Math.min(ripples.length, MAX_RIPPLES);
     for (let i = 0; i < count; i++) {
       const rip = ripples[i];
@@ -438,22 +427,19 @@
 
     gl.uniform1f(uTimeLoc, curTime);
     gl.uniform1f(uAspectLoc, window.innerWidth / window.innerHeight);
-    gl.uniform2f(uResolutionLoc, canvas.width, canvas.height);
     gl.uniform1i(uCountLoc, count);
     gl.uniform4fv(uRipplesLoc, rippleData);
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-    requestAnimationFrame(tick);
+    animFrameId = requestAnimationFrame(tick);
   }
 
-  // Приветственные мягкие волны в центре при открытии сайта
+  // Приветственный мягкий всплеск по центру при загрузке страницы
   setTimeout(() => {
-    addRipple(0.5, 0.45, 0.7);
-    setTimeout(() => addRipple(0.5, 0.45, 0.45), 180);
-  }, 350);
-
-  wakeUp();
+    addRipple(0.5, 0.45, 0.80);
+    setTimeout(() => addRipple(0.5, 0.45, 0.50), 120);
+  }, 250);
 
   // Резервный рендерер 2D Canvas на случай отсутствия WebGL
   function initCanvas2DFallback() {
@@ -467,7 +453,7 @@
         x: x * window.innerWidth,
         y: y * window.innerHeight,
         born: performance.now(),
-        str: str || 0.5
+        str: str || 0.55
       });
       if (circles.length > 35) circles.shift();
       if (!isRunning) {
@@ -480,20 +466,20 @@
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     }
-    window.addEventListener('resize', resize2D);
+    window.addEventListener('resize', resize2D, { passive: true });
     resize2D();
 
     window.addEventListener('pointermove', (e) => {
-      addCircle(e.clientX / window.innerWidth, e.clientY / window.innerHeight, 0.4);
+      addCircle(e.clientX / window.innerWidth, e.clientY / window.innerHeight, 0.5);
     }, { passive: true });
 
     window.addEventListener('pointerdown', (e) => {
-      addCircle(e.clientX / window.innerWidth, e.clientY / window.innerHeight, 0.8);
+      addCircle(e.clientX / window.innerWidth, e.clientY / window.innerHeight, 0.85);
     }, { passive: true });
 
     window.addEventListener('touchmove', (e) => {
       if (e.touches && e.touches[0]) {
-        addCircle(e.touches[0].clientX / window.innerWidth, e.touches[0].clientY / window.innerHeight, 0.5);
+        addCircle(e.touches[0].clientX / window.innerWidth, e.touches[0].clientY / window.innerHeight, 0.6);
       }
     }, { passive: true });
 
@@ -501,7 +487,7 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const now = performance.now();
 
-      while (circles.length > 0 && now - circles[0].born > 2200) {
+      while (circles.length > 0 && now - circles[0].born > 2400) {
         circles.shift();
       }
 
@@ -513,19 +499,19 @@
       for (let i = 0; i < circles.length; i++) {
         const c = circles[i];
         const age = (now - c.born) / 1000;
-        const radius = age * 180;
-        const alpha = Math.max(0, (1 - age / 2.2) * c.str);
+        const radius = age * 190;
+        const alpha = Math.max(0, (1 - age / 2.4) * c.str);
 
         ctx.save();
         ctx.beginPath();
         ctx.arc(c.x, c.y, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(56, 189, 248, ${alpha * 0.75})`;
+        ctx.strokeStyle = `rgba(56, 189, 248, ${alpha * 0.85})`;
         ctx.lineWidth = 3.5;
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.arc(c.x, c.y, Math.max(0, radius - 14), 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(168, 85, 247, ${alpha * 0.55})`;
+        ctx.arc(c.x, c.y, Math.max(0, radius - 15), 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(168, 85, 247, ${alpha * 0.65})`;
         ctx.lineWidth = 2.0;
         ctx.stroke();
         ctx.restore();
@@ -534,6 +520,6 @@
       requestAnimationFrame(tick2D);
     }
 
-    addCircle(0.5, 0.45, 0.7);
+    addCircle(0.5, 0.45, 0.8);
   }
 })();
