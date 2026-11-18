@@ -1,0 +1,30 @@
+{
+  "version": "26.3.0",
+  "releaseDate": "2026-11-18",
+  "channel": "release",
+  "minecraft": "26.3",
+  "client": {
+    "version": "26.3.0",
+    "jarName": "shinyvisuals-26.3.jar",
+    "downloadUrl": "https://shinyvisuals.github.io/downloads/shinyvisuals-26.3.jar",
+    "sizeBytes": 79430174,
+    "fabricApi": {
+      "jarName": "fabric-api-0.165.0+26.3.jar",
+      "downloadUrl": "https://shinyvisuals.github.io/downloads/fabric-api-0.165.0+26.3.jar"
+    }
+  },
+  "launcher": {
+    "version": "26.3.0",
+    "downloadUrl": "https://shinyvisuals.github.io/downloads/ShinyVisualsLoader.exe"
+  },
+  "changelog": [
+    "Добавлен модуль 3D цветов (Flowers) с завитками, лепестками и оптимизацией",
+    "Исправлен Color Picker (клик-маршрутизация и закрытие по клику вне)",
+    "Исправлено отображение названий клавиш биндов (Enter, Shift, Space и т.д.)",
+    "Исправлен Custom Fog (кастомный туман)",
+    "Исправлен рендер предметов ItemPhysics (устранена левитация)",
+    "Исправлен Kill Effect (устранено пропадание сущностей под углом)",
+    "Оптимизирован 3D рендеринг через BufferBuilder"
+  ],
+  "motd": "Добро пожаловать в ShinyVisuals 26.3!"
+}
