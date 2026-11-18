@@ -7,7 +7,7 @@
     "version": "26.3.0",
     "jarName": "shinyvisuals-26.3.jar",
     "downloadUrl": "https://shinyvisuals.github.io/downloads/shinyvisuals-26.3.jar",
-    "sizeBytes": 79431755,
+    "sizeBytes": 79449291,
     "fabricApi": {
       "jarName": "fabric-api-0.165.0+26.3.jar",
       "downloadUrl": "https://shinyvisuals.github.io/downloads/fabric-api-0.165.0+26.3.jar"
@@ -18,6 +18,7 @@
     "downloadUrl": "https://shinyvisuals.github.io/downloads/ShinyVisualsLoader.exe"
   },
   "changelog": [
+    "Исправлен краш при клике мышью (NoClassDefFoundError: InputKeys)",
     "Изолированная корневая папка игры Minecraft (C:\\ShinyVisuals\\game)",
     "Строгая DRM-привязка: запуск разрешен исключительно через официальный лоадер ShinyVisuals",
     "Мгновенный краш клиента при попытке запуска в обход лоадера или без авторизации",
