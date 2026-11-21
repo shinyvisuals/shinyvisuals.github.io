@@ -7,7 +7,7 @@
     "version": "26.3.0",
     "jarName": "shinyvisuals-26.3.jar",
     "downloadUrl": "https://shinyvisuals.github.io/downloads/shinyvisuals-26.3.jar",
-    "sizeBytes": 81049713,
+    "sizeBytes": 82379580,
     "fabricApi": {
       "jarName": "fabric-api-0.165.0+26.3.jar",
       "downloadUrl": "https://shinyvisuals.github.io/downloads/fabric-api-0.165.0+26.3.jar"
@@ -18,9 +18,8 @@
     "downloadUrl": "https://shinyvisuals.github.io/downloads/ShinyVisualsLoader.exe"
   },
   "changelog": [
-    "Исправлен рендер и спавн 3D KillEffect (включение мобов по умолчанию, прямая загрузка .bbmodel, запасной 3D-рендер)",
-    "Восстановлены звуки игры и звуковые эффекты убийств",
-    "Добавлены 40+ новых 3D-режимов для KillEffect на основе Blockbench-моделей (.bbmodel) с анимациями и тематическими эффектами частиц",
+    "Исправлено отображение логотипа в ClickGUI и Watermark (устранена missing-текстура)",
+    "Очищены режимы KillEffect: возвращены оригинальные легкие эффекты (Ghost и Lightning), удалены сторонние модели",
     "Исправлено отображение названий режимов свинга и списков в ClickGUI (ListComponent)",
     "Исправлен клик по слайдеру в ClickGUI (моментальное изменение по клику)",
     "Исправлена длина трейлов (Trails) — не зависит от FPS и рассчитывается по реальному времени",
