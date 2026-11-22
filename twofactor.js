@@ -23,7 +23,8 @@
     BRUTE_FORCE: 'shiny_sec_bruteforce',
     AUDIT_LOG: 'shiny_sec_audit',
     GATE_UNLOCKED: 'shiny_gate_unlocked',
-    CURRENT_USER: 'shiny_current_user'
+    CURRENT_USER: 'shiny_current_user',
+    ACCOUNTS_DB: 'shiny_accounts_db'
   };
 
   const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -946,6 +947,560 @@
   }
 
   // --------------------------------------------------------------------------
+  // 9.5. Управление аккаунтами, HWID и синхронизация с Лоадером (Порт 26300)
+  // --------------------------------------------------------------------------
+  let loaderBridgeStatus = { online: false, hwid: null, lastChecked: 0 };
+
+  function getCurrentAccountUser() {
+    try {
+      const userStr = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+      if (userStr) return JSON.parse(userStr);
+    } catch(e) {}
+    return null;
+  }
+
+  function saveCurrentAccountUser(user) {
+    try {
+      if (user) localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+      else localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+    } catch(e) {}
+    updateSiteAccountUI();
+  }
+
+  function getAccountsList() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.ACCOUNTS_DB);
+      if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    const def = [
+      {
+        username: 'Admin',
+        uid: '#1337',
+        passwordHash: '2614e7405f88b19832f5747088b197f2934d6ba3db4ee717f73293e1604772e9',
+        salt: DEFAULT_MASTER_SALT,
+        role: 'OWNER',
+        plan: 'SHINYVISUALS PRO',
+        subscription: 'Lifetime',
+        hwid: null,
+        twoFactor: { enabled: false, secret: '', backupCodes: [] },
+        createdAt: 1731780000000
+      }
+    ];
+    try { localStorage.setItem(STORAGE_KEYS.ACCOUNTS_DB, JSON.stringify(def)); } catch(e){}
+    return def;
+  }
+
+  function saveAccountsList(list) {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ACCOUNTS_DB, JSON.stringify(list));
+    } catch(e) {}
+  }
+
+  async function checkLoaderBridge() {
+    try {
+      const res = await fetch('http://127.0.0.1:26300/api/status', { mode: 'cors', cache: 'no-cache' });
+      if (res.ok) {
+        const data = await res.json();
+        loaderBridgeStatus = {
+          online: true,
+          hwid: data.hwid,
+          accountsCount: data.accountsCount,
+          lastChecked: Date.now()
+        };
+        const u = getCurrentAccountUser();
+        if (u && !u.hwid && data.hwid) {
+          u.hwid = data.hwid;
+          saveCurrentAccountUser(u);
+        }
+        updateSiteAccountUI();
+        return loaderBridgeStatus;
+      }
+    } catch(e) {}
+    loaderBridgeStatus.online = false;
+    updateSiteAccountUI();
+    return loaderBridgeStatus;
+  }
+
+  async function loginAccount(username, password, totpCode) {
+    const cleanUser = (username || '').trim();
+    const cleanPass = (password || '').trim();
+    if (!cleanUser || !cleanPass) return { success: false, error: 'Введите никнейм и пароль' };
+
+    // 1. Попытка авторизации через локальный мост лоадера
+    try {
+      const bridgeRes = await fetch('http://127.0.0.1:26300/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: cleanUser, password: cleanPass, totpCode: totpCode })
+      });
+      if (bridgeRes.ok) {
+        const data = await bridgeRes.json();
+        if (data.success && data.user) {
+          saveCurrentAccountUser(data.user);
+          logSecurityEvent('LOGIN_SUCCESS', `Вход в аккаунт через Лоадер-мост: ${data.user.username}`);
+          return { success: true, user: data.user, hwid: data.hwid };
+        } else if (data.require2FA) {
+          return { success: false, require2FA: true, error: data.error };
+        } else if (data.error === 'HWID_MISMATCH') {
+          return { success: false, error: 'HWID_MISMATCH', boundHwid: data.boundHwid, currentHwid: data.currentHwid, message: data.message };
+        }
+      }
+    } catch(e) {}
+
+    // 2. Локальная база сайта
+    const accounts = getAccountsList();
+    const user = accounts.find(u => u.username.toLowerCase() === cleanUser.toLowerCase());
+    if (!user) return { success: false, error: 'Пользователь не найден' };
+
+    const hash = await hashPassword(cleanPass, user.salt || DEFAULT_MASTER_SALT);
+    if (hash !== user.passwordHash) {
+      return { success: false, error: 'Неверный пароль' };
+    }
+
+    if (user.twoFactor && user.twoFactor.enabled) {
+      if (!totpCode) return { success: false, require2FA: true, error: 'Введите 6-значный код 2FA' };
+      const isOk = await verifyTOTP(user.twoFactor.secret, totpCode);
+      const isBackup = user.twoFactor.backupCodes && user.twoFactor.backupCodes.includes(totpCode.trim());
+      if (!isOk && !isBackup) return { success: false, require2FA: true, error: 'Неверный код 2FA' };
+    }
+
+    if (loaderBridgeStatus.online && loaderBridgeStatus.hwid) {
+      if (!user.hwid) {
+        user.hwid = loaderBridgeStatus.hwid;
+        saveAccountsList(accounts);
+      } else if (user.hwid !== loaderBridgeStatus.hwid) {
+        return {
+          success: false,
+          error: 'HWID_MISMATCH',
+          boundHwid: user.hwid,
+          currentHwid: loaderBridgeStatus.hwid,
+          message: `Аккаунт привязан к ПК (${user.hwid}). Текущий ПК: (${loaderBridgeStatus.hwid})`
+        };
+      }
+    }
+
+    saveCurrentAccountUser(user);
+    logSecurityEvent('LOGIN_SUCCESS', `Успешный вход в аккаунт: ${user.username}`);
+    return { success: true, user };
+  }
+
+  async function registerAccount(username, password) {
+    const cleanUser = (username || '').trim();
+    const cleanPass = (password || '').trim();
+    if (cleanUser.length < 2) return { success: false, error: 'Никнейм должен содержать от 2 символов' };
+    if (cleanPass.length < 3) return { success: false, error: 'Пароль должен содержать от 3 символов' };
+
+    // 1. Попытка через мост лоадера
+    try {
+      const bridgeRes = await fetch('http://127.0.0.1:26300/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: cleanUser, password: cleanPass })
+      });
+      if (bridgeRes.ok) {
+        const data = await bridgeRes.json();
+        if (data.success && data.user) {
+          saveCurrentAccountUser(data.user);
+          logSecurityEvent('ACCOUNT_CREATED', `Новый аккаунт через Лоадер-мост: ${cleanUser}`);
+          return { success: true, user: data.user, hwid: data.hwid };
+        }
+      }
+    } catch(e) {}
+
+    // 2. Локальная регистрация
+    const accounts = getAccountsList();
+    if (accounts.some(u => u.username.toLowerCase() === cleanUser.toLowerCase())) {
+      return { success: false, error: 'Пользователь с таким никнеймом уже существует' };
+    }
+
+    const salt = DEFAULT_MASTER_SALT;
+    const pwdHash = await hashPassword(cleanPass, salt);
+    const hwid = loaderBridgeStatus.online ? loaderBridgeStatus.hwid : null;
+    const newUser = {
+      username: cleanUser,
+      uid: cleanUser.toLowerCase() === 'admin' ? '#1337' : '#' + Math.floor(1000 + Math.random() * 9000),
+      passwordHash: pwdHash,
+      salt: salt,
+      role: cleanUser.toLowerCase() === 'admin' ? 'OWNER' : 'USER',
+      plan: 'SHINYVISUALS PRO',
+      subscription: 'Lifetime',
+      hwid: hwid,
+      twoFactor: { enabled: false, secret: '', backupCodes: [] },
+      createdAt: Date.now()
+    };
+
+    accounts.push(newUser);
+    saveAccountsList(accounts);
+    saveCurrentAccountUser(newUser);
+    logSecurityEvent('ACCOUNT_CREATED', `Зарегистрирован новый аккаунт: ${cleanUser}`);
+    return { success: true, user: newUser, hwid };
+  }
+
+  async function resetHwidAccount(username) {
+    const cleanUser = (username || '').trim();
+    try {
+      const bridgeRes = await fetch('http://127.0.0.1:26300/api/auth/reset-hwid', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: cleanUser })
+      });
+      if (bridgeRes.ok) {
+        const data = await bridgeRes.json();
+        if (data.success) {
+          logSecurityEvent('HWID_RESET', `Сброс HWID через лоадер для ${cleanUser}`);
+          return { success: true, hwid: data.hwid };
+        }
+      }
+    } catch(e) {}
+
+    const accounts = getAccountsList();
+    const user = accounts.find(u => u.username.toLowerCase() === cleanUser.toLowerCase());
+    if (user) {
+      user.hwid = loaderBridgeStatus.online ? loaderBridgeStatus.hwid : null;
+      saveAccountsList(accounts);
+      const curr = getCurrentAccountUser();
+      if (curr && curr.username.toLowerCase() === cleanUser.toLowerCase()) {
+        curr.hwid = user.hwid;
+        saveCurrentAccountUser(curr);
+      }
+      logSecurityEvent('HWID_RESET', `Сброс HWID для ${cleanUser}`);
+      return { success: true, hwid: user.hwid };
+    }
+    return { success: false, error: 'Пользователь не найден' };
+  }
+
+  function updateSiteAccountUI() {
+    const user = getCurrentAccountUser();
+    const navBtn = document.getElementById('btnNavAccount');
+    if (navBtn) {
+      if (user) {
+        navBtn.innerHTML = `👤 ${user.username} <span style="font-size:10px;padding:1px 5px;background:#10b981;border-radius:4px;color:#fff;font-weight:700;margin-left:4px;">PRO</span>`;
+      } else {
+        navBtn.innerHTML = `👤 Личный кабинет`;
+      }
+    }
+
+    const floatingBadge = document.getElementById('shinySecurityFloatingBadge');
+    if (floatingBadge) {
+      if (loaderBridgeStatus.online && loaderBridgeStatus.hwid) {
+        floatingBadge.style.borderColor = 'rgba(74, 222, 128, 0.6)';
+        floatingBadge.title = `Лоадер подключен (HWID: ${loaderBridgeStatus.hwid})`;
+      }
+    }
+  }
+
+  function openAuthModal(defaultTab = 'login') {
+    closeActiveModal();
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'twofactor-modal-backdrop';
+    backdrop.id = 'shinyAuthModal';
+
+    const isOnline = loaderBridgeStatus.online;
+
+    backdrop.innerHTML = `
+      <div class="twofactor-modal-card" style="max-width:420px;text-align:center;">
+        <button class="twofactor-close-btn" id="btnAuthClose">✕</button>
+
+        <div style="font-size:38px;margin-bottom:8px;">✨</div>
+        <h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px 0;">ShinyVisuals 3.3</h2>
+        <p style="font-size:12.5px;color:#c084fc;margin:0 0 16px 0;">Единая авторизация & Привязка HWID</p>
+
+        <!-- Статус моста лоадера -->
+        <div style="margin-bottom:16px;padding:8px 12px;border-radius:10px;font-size:11.5px;display:flex;align-items:center;justify-content:center;gap:8px;background:${isOnline ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.06)'};border:1px solid ${isOnline ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.1)'};color:${isOnline ? '#34d399' : '#a7a3b8'};">
+          <span>${isOnline ? '🟢 Лоадер на связи (HWID ПК обнаружен)' : '⚪ Лоадер офлайн (Автосинхронизация при запуске)'}</span>
+        </div>
+
+        <!-- Табы Вход / Регистрация -->
+        <div style="display:flex;gap:8px;margin-bottom:18px;background:rgba(14,8,28,0.7);padding:4px;border-radius:10px;border:1px solid rgba(168,85,247,0.2);">
+          <button type="button" id="tabSiteLogin" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:12px;font-weight:700;text-transform:uppercase;cursor:pointer;background:${defaultTab === 'login' ? '#a855f7' : 'transparent'};color:${defaultTab === 'login' ? '#fff' : '#a7a3b8'};">ВХОД</button>
+          <button type="button" id="tabSiteRegister" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:12px;font-weight:700;text-transform:uppercase;cursor:pointer;background:${defaultTab === 'register' ? '#a855f7' : 'transparent'};color:${defaultTab === 'register' ? '#fff' : '#a7a3b8'};">РЕГИСТРАЦИЯ</button>
+        </div>
+
+        <!-- Форма Входа -->
+        <div id="boxSiteLogin" style="display:${defaultTab === 'login' ? 'block' : 'none'};">
+          <input type="text" id="txtSiteLoginUser" class="shiny-gate-input" placeholder="Никнейм / Логин" style="width:100%;margin-bottom:12px;box-sizing:border-box;" value="Admin" />
+          <input type="password" id="txtSiteLoginPass" class="shiny-gate-input" placeholder="Пароль" style="width:100%;margin-bottom:12px;box-sizing:border-box;" value="1337" />
+          
+          <div id="boxSiteLogin2FA" style="display:none;margin-bottom:12px;">
+            <input type="text" id="txtSiteLogin2FA" class="shiny-gate-input" placeholder="6-значный код Google Authenticator" maxlength="8" style="width:100%;box-sizing:border-box;" />
+          </div>
+
+          <div id="lblSiteLoginError" style="display:none;font-size:12px;color:#f87171;margin-bottom:12px;text-align:left;"></div>
+
+          <button type="button" class="twofactor-btn-primary" id="btnSiteSubmitLogin" style="width:100%;padding:12px;justify-content:center;font-weight:700;margin-bottom:8px;">
+            ВОЙТИ В АККАУНТ
+          </button>
+        </div>
+
+        <!-- Форма Регистрации -->
+        <div id="boxSiteRegister" style="display:${defaultTab === 'register' ? 'block' : 'none'};">
+          <input type="text" id="txtSiteRegUser" class="shiny-gate-input" placeholder="Желаемый никнейм" style="width:100%;margin-bottom:12px;box-sizing:border-box;" />
+          <input type="password" id="txtSiteRegPass" class="shiny-gate-input" placeholder="Пароль" style="width:100%;margin-bottom:8px;box-sizing:border-box;" />
+          <div id="regPassMeter"></div>
+          <input type="password" id="txtSiteRegConfirm" class="shiny-gate-input" placeholder="Повторите пароль" style="width:100%;margin-top:8px;margin-bottom:12px;box-sizing:border-box;" />
+
+          <div id="lblSiteRegError" style="display:none;font-size:12px;color:#f87171;margin-bottom:12px;text-align:left;"></div>
+
+          <button type="button" class="twofactor-btn-primary" id="btnSiteSubmitRegister" style="width:100%;padding:12px;justify-content:center;font-weight:700;margin-bottom:8px;">
+            СОЗДАТЬ АККАУНТ (LIFETIME PRO)
+          </button>
+          <div style="font-size:11.5px;color:#86efac;line-height:1.4;">
+            ✓ HWID будет привязан к вашему ПК автоматически<br/>
+            ✓ Подходит для мгновенного входа в Лоадере
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(backdrop);
+    document.getElementById('btnAuthClose').onclick = closeActiveModal;
+
+    const tabLogin = backdrop.querySelector('#tabSiteLogin');
+    const tabReg = backdrop.querySelector('#tabSiteRegister');
+    const boxLogin = backdrop.querySelector('#boxSiteLogin');
+    const boxReg = backdrop.querySelector('#boxSiteRegister');
+
+    tabLogin.onclick = () => {
+      tabLogin.style.background = '#a855f7'; tabLogin.style.color = '#fff';
+      tabReg.style.background = 'transparent'; tabReg.style.color = '#a7a3b8';
+      boxLogin.style.display = 'block'; boxReg.style.display = 'none';
+    };
+
+    tabReg.onclick = () => {
+      tabReg.style.background = '#a855f7'; tabReg.style.color = '#fff';
+      tabLogin.style.background = 'transparent'; tabLogin.style.color = '#a7a3b8';
+      boxLogin.style.display = 'none'; boxReg.style.display = 'block';
+    };
+
+    const regPassInp = backdrop.querySelector('#txtSiteRegPass');
+    if (regPassInp) attachStrengthMeterToInput(regPassInp);
+
+    backdrop.querySelector('#btnSiteSubmitLogin').onclick = async () => {
+      const u = (backdrop.querySelector('#txtSiteLoginUser').value || '').trim();
+      const p = (backdrop.querySelector('#txtSiteLoginPass').value || '').trim();
+      const totp = (backdrop.querySelector('#txtSiteLogin2FA').value || '').trim();
+      const errLbl = backdrop.querySelector('#lblSiteLoginError');
+
+      const res = await loginAccount(u, p, totp);
+      if (res.require2FA) {
+        backdrop.querySelector('#boxSiteLogin2FA').style.display = 'block';
+        errLbl.style.display = 'block';
+        errLbl.textContent = res.error || 'Введите 6-значный код 2FA';
+        backdrop.querySelector('#txtSiteLogin2FA').focus();
+        return;
+      }
+      if (!res.success) {
+        errLbl.style.display = 'block';
+        errLbl.textContent = res.message || res.error || 'Ошибка входа';
+        return;
+      }
+
+      closeActiveModal();
+      showSecurityToast(`✨ Добро пожаловать, ${res.user.username}!`);
+      openSecurityHubModal();
+    };
+
+    backdrop.querySelector('#btnSiteSubmitRegister').onclick = async () => {
+      const u = (backdrop.querySelector('#txtSiteRegUser').value || '').trim();
+      const p1 = (backdrop.querySelector('#txtSiteRegPass').value || '').trim();
+      const p2 = (backdrop.querySelector('#txtSiteRegConfirm').value || '').trim();
+      const errLbl = backdrop.querySelector('#lblSiteRegError');
+
+      if (!u || !p1) {
+        errLbl.style.display = 'block'; errLbl.textContent = 'Заполните все поля!'; return;
+      }
+      if (p1 !== p2) {
+        errLbl.style.display = 'block'; errLbl.textContent = 'Пароли не совпадают!'; return;
+      }
+
+      const res = await registerAccount(u, p1);
+      if (!res.success) {
+        errLbl.style.display = 'block'; errLbl.textContent = res.error || 'Ошибка регистрации'; return;
+      }
+
+      closeActiveModal();
+      showSecurityToast(`🎉 Аккаунт ${u} успешно создан!`);
+      openSecurityHubModal();
+    };
+  }
+
+  function openAccountModalOrProfile() {
+    const user = getCurrentAccountUser();
+    if (user) {
+      openSecurityHubModal();
+      setTimeout(() => {
+        const btnAcc = document.querySelector('.shiny-sec-tab-btn[data-tab="account"]');
+        if (btnAcc) btnAcc.click();
+      }, 50);
+    } else {
+      openAuthModal('login');
+    }
+  }
+
+  function renderAccountTab(body) {
+    const user = getCurrentAccountUser() || { username: 'Admin', uid: '#1337', role: 'OWNER', subscription: 'Lifetime' };
+    const isOnline = loaderBridgeStatus.online;
+    const pcHwid = loaderBridgeStatus.hwid || 'SHINY-PC-OFFLINE';
+    const userHwid = user.hwid || (isOnline ? pcHwid : null);
+    const isBound = userHwid && (!isOnline || userHwid === pcHwid);
+
+    body.innerHTML = `
+      <div class="shiny-sec-card" style="background:linear-gradient(135deg,rgba(30,16,56,0.8),rgba(18,9,36,0.95));border-color:rgba(168,85,247,0.4);margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#a855f7,#6366f1);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;">
+              ${(user.username || 'A').charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div style="font-size:16px;font-weight:700;color:#ffffff;display:flex;align-items:center;gap:8px;">
+                <span>${user.username}</span>
+                <span style="font-size:11px;padding:2px 8px;border-radius:6px;background:rgba(168,85,247,0.25);color:#c084fc;font-weight:600;">${user.uid || '#1337'}</span>
+              </div>
+              <div style="font-size:12px;color:#4ade80;font-weight:600;margin-top:2px;">
+                ⭐ SHINYVISUALS PRO (Lifetime Навсегда)
+              </div>
+            </div>
+          </div>
+          <span style="font-size:11px;padding:4px 9px;border-radius:8px;background:${isOnline ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.08)'};color:${isOnline ? '#34d399' : '#a7a3b8'};border:1px solid ${isOnline ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.15)'};">
+            ${isOnline ? '🟢 Лоадер на связи' : '⚪ Лоадер офлайн'}
+          </span>
+        </div>
+
+        <!-- HWID Блок -->
+        <div style="background:rgba(14,8,28,0.7);border:1px solid rgba(168,85,247,0.2);border-radius:10px;padding:12px 14px;margin-top:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:12px;color:#a7a3b8;font-weight:600;">Привязка Hardware ID (HWID):</span>
+            <span style="font-size:11.5px;font-weight:700;color:${isBound ? '#34d399' : '#f87171'};">
+              ${isBound ? '✓ Привязан к вашему ПК' : '⚠️ Требуется привязка'}
+            </span>
+          </div>
+          <div style="font-family:monospace;font-size:13px;font-weight:700;color:#c084fc;background:rgba(0,0,0,0.3);padding:8px 12px;border-radius:8px;border:1px dashed rgba(168,85,247,0.3);display:flex;align-items:center;justify-content:space-between;">
+            <span id="txtDisplayHwid">${userHwid || 'SHINY-ОЖИДАЕТ-ВХОДА'}</span>
+            <button type="button" id="btnHubCopyHwid" style="background:rgba(168,85,247,0.2);border:none;color:#fff;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px;">Скопировать</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button type="button" id="btnHubResetHwid" class="twofactor-btn-danger" style="flex:1;font-size:11.5px;padding:7px 10px;">
+              🔄 Сбросить HWID для нового ПК
+            </button>
+            ${isOnline ? `
+              <button type="button" id="btnHubAuthorizeLoader" class="twofactor-btn-primary" style="flex:1;font-size:11.5px;padding:7px 10px;">
+                🚀 Войти в Лоадер в 1 клик
+              </button>
+            ` : `
+              <button type="button" id="btnHubCopySyncToken" class="twofactor-btn-primary" style="flex:1;font-size:11.5px;padding:7px 10px;">
+                🔑 Токен связки
+              </button>
+            `}
+          </div>
+        </div>
+      </div>
+
+      <!-- Управление аккаунтом -->
+      <div class="shiny-sec-card">
+        <h4 style="font-size:13.5px;font-weight:700;color:#ffffff;margin:0 0 10px 0;">Действия с аккаунтом</h4>
+        <div style="display:flex;gap:10px;">
+          <button type="button" class="twofactor-btn-secondary" id="btnHubSwitchAccount" style="flex:1;font-size:12px;padding:9px;">
+            Сменить аккаунт / Войти
+          </button>
+          <button type="button" class="twofactor-btn-danger" id="btnHubLogout" style="font-size:12px;padding:9px 16px;">
+            Выйти
+          </button>
+        </div>
+      </div>
+    `;
+
+    const btnCopy = body.querySelector('#btnHubCopyHwid');
+    if (btnCopy) {
+      btnCopy.onclick = () => {
+        const h = body.querySelector('#txtDisplayHwid').textContent;
+        navigator.clipboard.writeText(h);
+        showSecurityToast(`✓ HWID скопирован: ${h}`);
+      };
+    }
+
+    const btnReset = body.querySelector('#btnHubResetHwid');
+    if (btnReset) {
+      btnReset.onclick = async () => {
+        if (!confirm(`Вы действительно хотите сбросить привязку HWID для аккаунта ${user.username}?`)) return;
+        const res = await resetHwidAccount(user.username);
+        if (res.success) {
+          showSecurityToast('✓ HWID успешно сброшен и обновлён!');
+          renderAccountTab(body);
+        } else {
+          showSecurityToast(res.error || 'Ошибка сброса HWID');
+        }
+      };
+    }
+
+    const btnAuthLoader = body.querySelector('#btnHubAuthorizeLoader');
+    if (btnAuthLoader) {
+      btnAuthLoader.onclick = async () => {
+        try {
+          const res = await fetch('http://127.0.0.1:26300/api/auth/approve-web-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: 'active_session', username: user.username })
+          });
+          showSecurityToast('🚀 Сигнал авторизации отправлен в запущенный Лоадер!');
+        } catch(e) {
+          showSecurityToast('Ошибка связи с лоадером');
+        }
+      };
+    }
+
+    const btnSyncToken = body.querySelector('#btnHubCopySyncToken');
+    if (btnSyncToken) {
+      btnSyncToken.onclick = () => {
+        const token = btoa(JSON.stringify(user));
+        navigator.clipboard.writeText(token);
+        showSecurityToast('🔑 Токен связки скопирован! Вставьте его в лоадере.');
+      };
+    }
+
+    const btnSwitch = body.querySelector('#btnHubSwitchAccount');
+    if (btnSwitch) {
+      btnSwitch.onclick = () => {
+        closeActiveModal();
+        openAuthModal('login');
+      };
+    }
+
+    const btnLogout = body.querySelector('#btnHubLogout');
+    if (btnLogout) {
+      btnLogout.onclick = () => {
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+        showSecurityToast('Вы вышли из аккаунта.');
+        renderAccountTab(body);
+        updateSiteAccountUI();
+      };
+    }
+  }
+
+  function handleWebAuthUrlParams() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('auth_token');
+      if (token) {
+        const user = getCurrentAccountUser() || { username: 'Admin' };
+        setTimeout(() => {
+          if (confirm(`🔔 ShinyVisuals Loader запрашивает подтверждение авторизации.\n\nПодтвердить вход для аккаунта ${user.username}?`)) {
+            fetch('http://127.0.0.1:26300/api/auth/approve-web-login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: token, username: user.username })
+            }).then(() => {
+              showSecurityToast('✓ Вход в ShinyVisuals Loader успешно подтверждён!');
+            }).catch(() => {
+              showSecurityToast('Лоадер не ответил на подтверждение.');
+            });
+          }
+        }, 600);
+      }
+    } catch(e) {}
+  }
+
+  // --------------------------------------------------------------------------
   // 10. Центр Безопасности (Security Hub Modal)
   // --------------------------------------------------------------------------
   function openSecurityHubModal() {
@@ -990,6 +1545,7 @@
         <!-- Навигационные вкладки -->
         <div class="shiny-sec-hub-tabs">
           <button class="shiny-sec-tab-btn active" data-tab="overview">🛡️ Обзор</button>
+          <button class="shiny-sec-tab-btn" data-tab="account">👤 Аккаунт & HWID</button>
           <button class="shiny-sec-tab-btn" data-tab="gate">🚪 Вход на сайт</button>
           <button class="shiny-sec-tab-btn" data-tab="2fa">📱 2FA Authenticator</button>
           <button class="shiny-sec-tab-btn" data-tab="passwords">🔑 Пароли</button>
@@ -1087,6 +1643,9 @@
           saveSecurityConfig(secCfg);
           showSecurityToast(`Блокировка ПКМ: ${secCfg.antiContextMenu ? 'Включена' : 'Выключена'}`);
         };
+
+      } else if (tabName === 'account') {
+        renderAccountTab(body);
 
       } else if (tabName === 'gate') {
         body.innerHTML = `
@@ -1530,6 +2089,10 @@
     initWebArmor();
     hookForms();
     injectFloatingSecurityBadge();
+    checkLoaderBridge();
+    setInterval(checkLoaderBridge, 4000);
+    updateSiteAccountUI();
+    handleWebAuthUrlParams();
 
     // DOM Observer для плавного встраивания в динамический React DOM
     let rafId = null;
@@ -1540,6 +2103,7 @@
           injectAccountModalRow();
           injectFloatingSecurityBadge();
           checkAndEnforceSiteGate();
+          updateSiteAccountUI();
         });
       }
     });
@@ -1556,6 +2120,8 @@
   // Глобальный API
   window.ShinySecurity = {
     openHub: openSecurityHubModal,
+    openAccount: openAccountModalOrProfile,
+    openAuth: openAuthModal,
     open2FASetup: openGoogleAuthSetupModal,
     open2FADisable: openDisable2FAModal,
     getConfig: getSecurityConfig,
@@ -1563,6 +2129,13 @@
     get2FAConfig,
     hashPassword,
     evaluatePasswordStrength,
+    getAccounts: getAccountsList,
+    getCurrentUser: getCurrentAccountUser,
+    login: loginAccount,
+    register: registerAccount,
+    resetHWID: resetHwidAccount,
+    checkLoaderBridge,
+    getLoaderStatus: () => loaderBridgeStatus,
     lockSiteNow: () => {
       const cfg = getSecurityConfig();
       cfg.siteGateEnabled = true;
