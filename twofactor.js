@@ -997,16 +997,19 @@
       return list.map(u => {
         const cleanU = (u.username || '').trim();
         const isOwner = cleanU.toLowerCase() === 'deathproblem' || (u.role && u.role.toLowerCase() === 'owner');
+        const num = parseInt(u.uuid || u.id, 10);
+        let uid = cleanU.toLowerCase() === 'deathproblem' ? '#0001' : (cleanU.toLowerCase() === 'admin' ? '#1337' : (!isNaN(num) && num > 0 ? '#' + String(num).padStart(4, '0') : '#0001'));
         return {
           uuid: u.uuid || u.id || 0,
           id: String(u.id || u.uuid || 0),
+          uid: uid,
           username: cleanU,
           email: u.email || '',
           password: u.password || '',
           role: isOwner ? 'OWNER' : (u.role || 'Player').toUpperCase(),
           hwid: (hwids && hwids[cleanU]) || u.hwid || null,
-          plan: 'SHINYVISUALS PRO',
-          subscription: 'Lifetime',
+          plan: 'FREE',
+          subscription: 'FREE',
           twoFactor: u.twoFactor || { enabled: false, secret: '', backupCodes: [] },
           createdAt: u.createdAt ? new Date(u.createdAt).getTime() : Date.now()
         };
@@ -1043,8 +1046,8 @@
         uid: '#0001',
         password: 'basebobmazxc',
         role: 'OWNER',
-        plan: 'SHINYVISUALS PRO',
-        subscription: 'Lifetime',
+        plan: 'FREE',
+        subscription: 'FREE',
         hwid: null,
         twoFactor: { enabled: false, secret: '', backupCodes: [] },
         createdAt: 1731780000000
@@ -1055,8 +1058,8 @@
         passwordHash: '2614e7405f88b19832f5747088b197f2934d6ba3db4ee717f73293e1604772e9',
         salt: DEFAULT_MASTER_SALT,
         role: 'OWNER',
-        plan: 'SHINYVISUALS PRO',
-        subscription: 'Lifetime',
+        plan: 'FREE',
+        subscription: 'FREE',
         hwid: null,
         twoFactor: { enabled: false, secret: '', backupCodes: [] },
         createdAt: 1731780000000
@@ -1548,10 +1551,10 @@
             <div>
               <div style="font-size:16px;font-weight:700;color:#ffffff;display:flex;align-items:center;gap:8px;">
                 <span>${user.username}</span>
-                <span style="font-size:11px;padding:2px 8px;border-radius:6px;background:rgba(168,85,247,0.25);color:#c084fc;font-weight:600;">${user.uid || '#1337'}</span>
+                <span style="font-size:11px;padding:2px 8px;border-radius:6px;background:rgba(168,85,247,0.25);color:#c084fc;font-weight:600;">${user.uid || '#0001'}</span>
               </div>
               <div style="font-size:12px;color:#4ade80;font-weight:600;margin-top:2px;">
-                ⭐ SHINYVISUALS PRO (Lifetime Навсегда)
+                ⭐ SHINYVISUALS FREE
               </div>
             </div>
           </div>
