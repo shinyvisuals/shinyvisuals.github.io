@@ -27,6 +27,11 @@
     ACCOUNTS_DB: 'shiny_accounts_db'
   };
 
+  // Очистка устаревшего глобального ключа 2FA, чтобы он не наследовался новыми аккаунтами
+  try {
+    localStorage.removeItem(STORAGE_KEYS.CONFIG_2FA);
+  } catch (e) {}
+
   const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   const DEFAULT_MASTER_SALT = 'shiny_visuals_salt_2026';
   // Default hashed master password for Site Gate (SHA-256 for "shiny2026" with salt)
@@ -556,16 +561,37 @@
   }
 
   function get2FAConfig(userOverride) {
-    const user = userOverride || detectCurrentUsername();
-    const userKey = 'shiny_2fa_' + (user ? user.toLowerCase() : 'default');
+    const user = (userOverride || detectCurrentUsername() || '').trim();
+    if (!user) {
+      return { enabled: false, secret: null, username: '', backupCodes: [] };
+    }
+    const userKey = 'shiny_2fa_' + user.toLowerCase();
     try {
-      const data = localStorage.getItem(userKey) || localStorage.getItem(STORAGE_KEYS.CONFIG_2FA);
+      const data = localStorage.getItem(userKey);
       if (data) {
         const parsed = JSON.parse(data);
-        parsed.username = user;
-        return parsed;
+        if (parsed && parsed.enabled && parsed.secret) {
+          parsed.username = user;
+          return parsed;
+        }
       }
     } catch (e) {}
+
+    // Ни в коем случае не использовать глобальный конфиг для чужих/новых пользователей!
+    // Проверяем аккаунты в базе данных
+    try {
+      const accounts = getAccountsList();
+      const acc = accounts.find(a => a.username && a.username.toLowerCase() === user.toLowerCase());
+      if (acc && acc.twoFactor && acc.twoFactor.enabled && acc.twoFactor.secret) {
+        return {
+          enabled: true,
+          secret: acc.twoFactor.secret,
+          username: user,
+          backupCodes: acc.twoFactor.backupCodes || []
+        };
+      }
+    } catch (e) {}
+
     return {
       enabled: false,
       secret: null,
@@ -578,9 +604,14 @@
   function save2FAConfig(cfg) {
     try {
       const user = cfg.username || detectCurrentUsername();
-      const userKey = 'shiny_2fa_' + (user ? user.toLowerCase() : 'default');
+      if (!user) return;
+      const userKey = 'shiny_2fa_' + user.toLowerCase();
       localStorage.setItem(userKey, JSON.stringify(cfg));
-      localStorage.setItem(STORAGE_KEYS.CONFIG_2FA, JSON.stringify(cfg));
+      const current = getCurrentAccountUser();
+      if (current && current.username.toLowerCase() === user.toLowerCase()) {
+        current.twoFactor = cfg;
+        saveCurrentAccountUser(current);
+      }
       window.dispatchEvent(new CustomEvent('shiny_2fa_changed', { detail: cfg }));
     } catch (e) {}
   }
@@ -2069,12 +2100,39 @@
       const form = e.target;
       if (!form || form.tagName !== 'FORM' || form.id === 'shinyGateForm') return;
 
+      // 0. Защита: формы РЕГИСТРАЦИИ никогда не должны запрашивать 2FA код
+      const formText = (form.innerText || '').toLowerCase();
+      const formHtml = (form.innerHTML || '').toLowerCase();
+      const submitBtn = form.querySelector('button[type="submit"]') || form.querySelector('button');
+      const submitText = (submitBtn ? submitBtn.innerText : '').toLowerCase();
+
+      const isRegistration = form.dataset.authType === 'register' ||
+                             form.classList.contains('register-form') ||
+                             form.querySelector('input[type="email"]') !== null ||
+                             form.querySelector('input[name*="email" i]') !== null ||
+                             form.querySelector('input[placeholder*="email" i], input[placeholder*="почт" i]') !== null ||
+                             form.querySelector('input[placeholder*="повтор" i], input[placeholder*="подтвержд" i]') !== null ||
+                             form.querySelectorAll('input[type="password"]').length > 1 ||
+                             submitText.includes('регистрац') ||
+                             submitText.includes('создать') ||
+                             submitText.includes('register') ||
+                             formText.includes('регистрац') ||
+                             formText.includes('создать аккаунт') ||
+                             formText.includes('зарегистрироваться') ||
+                             formHtml.includes('зарегистрироваться') ||
+                             formHtml.includes('создать аккаунт');
+
+      if (isRegistration) {
+        return; // Для регистрации 2FA проверка строго отключена
+      }
+
       const userInp = form.querySelector('input[type="text"], input[name="username"], input[placeholder*="логин" i], input[placeholder*="ник" i], input[placeholder*="username" i]');
       const passInp = form.querySelector('input[type="password"]');
 
       if (!passInp) return;
 
       const username = userInp ? userInp.value.trim() : detectCurrentUsername();
+      if (!username) return;
 
       // 1. Проверка на блокировку брутфорса
       if (isBruteForceLocked(username)) {
@@ -2094,8 +2152,8 @@
 
         promptLogin2FA(cfg, () => {
           form.dataset.twofactorVerified = 'true';
-          const submitBtn = form.querySelector('button[type="submit"]') || form.querySelector('button');
-          if (submitBtn) submitBtn.click();
+          const btn = form.querySelector('button[type="submit"]') || form.querySelector('button');
+          if (btn) btn.click();
           else form.submit();
         });
         return false;
