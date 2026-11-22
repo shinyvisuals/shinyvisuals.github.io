@@ -1050,7 +1050,10 @@
     // 2. Локальная база сайта
     const accounts = getAccountsList();
     const user = accounts.find(u => u.username.toLowerCase() === cleanUser.toLowerCase());
-    if (!user) return { success: false, error: 'Пользователь не найден' };
+    if (!user) {
+      // Автоматическая регистрация нового пользователя при первом входе
+      return registerAccount(cleanUser, cleanPass);
+    }
 
     const hash = await hashPassword(cleanPass, user.salt || DEFAULT_MASTER_SALT);
     if (hash !== user.passwordHash) {
