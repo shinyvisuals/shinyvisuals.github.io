@@ -1,1 +1,382 @@
-/* ShinyVisuals - Cleaned */
+/* ==========================================================================
+   ShinyVisuals — Google Authenticator (2FA) Stylesheet
+   Фиолетово-тёмный дизайн со стеклянным размытием
+   ========================================================================== */
+
+/* Плавающая кнопка 2FA в правом нижнем углу */
+.twofactor-float-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99998;
+  background: linear-gradient(135deg, rgba(28, 10, 56, 0.95), rgba(18, 6, 36, 0.95));
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(168, 85, 247, 0.35);
+  color: #ffffff;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+  font-family: inherit;
+  user-select: none;
+}
+
+.twofactor-float-btn:hover {
+  border-color: #c084fc;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.75), 0 0 28px rgba(168, 85, 247, 0.55);
+  transform: translateY(-2px);
+}
+
+/* Строка 2FA в окне профиля / аккаунта */
+.shiny-2fa-modal-row {
+  background: rgba(14, 5, 28, 0.75);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.shiny-2fa-modal-row:hover {
+  border-color: rgba(192, 132, 252, 0.6);
+  background: rgba(24, 10, 48, 0.9);
+}
+
+.shiny-2fa-modal-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shiny-2fa-icon {
+  font-size: 22px;
+}
+
+.shiny-2fa-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.shiny-2fa-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.shiny-2fa-desc {
+  font-size: 11.5px;
+  color: #c084fc;
+  margin-top: 2px;
+}
+
+.shiny-2fa-action-btn {
+  background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+  color: #ffffff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.shiny-2fa-action-btn:hover {
+  background: linear-gradient(135deg, #c084fc 0%, #9333ea 100%);
+  transform: translateY(-1px);
+}
+
+/* Модальное окно Google Authenticator */
+.twofactor-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(6, 2, 13, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: twofactorFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+}
+
+@keyframes twofactorFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.twofactor-modal-box {
+  background: linear-gradient(180deg, rgba(24, 10, 48, 0.98) 0%, rgba(14, 5, 28, 0.99) 100%);
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  box-shadow: 0 25px 65px rgba(0, 0, 0, 0.85), 0 0 35px rgba(168, 85, 247, 0.28);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  color: #ffffff;
+  padding: 26px;
+  animation: twofactorScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+@keyframes twofactorScaleIn {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.twofactor-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.twofactor-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.twofactor-header-title h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.twofactor-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e9d5ff;
+  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.twofactor-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+/* Карточки шагов настройки */
+.twofactor-step-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.twofactor-step-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c084fc;
+  margin-bottom: 8px;
+}
+
+.twofactor-step-num {
+  background: rgba(168, 85, 247, 0.3);
+  border: 1px solid rgba(168, 85, 247, 0.6);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #ffffff;
+}
+
+/* QR код */
+.twofactor-qr-wrapper {
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px auto;
+  width: 180px;
+  height: 180px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.twofactor-qr-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Секретный ключ */
+.twofactor-secret-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.twofactor-secret-key {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  color: #f3e8ff;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  flex: 1;
+  user-select: all;
+  text-align: center;
+}
+
+.twofactor-copy-btn {
+  background: rgba(168, 85, 247, 0.25);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  color: #ffffff;
+  font-size: 11.5px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.twofactor-copy-btn:hover {
+  background: rgba(168, 85, 247, 0.5);
+}
+
+/* Ввод 6 цифр */
+.twofactor-input-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.twofactor-digit-box {
+  width: 42px;
+  height: 48px;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  background: rgba(13, 4, 25, 0.85);
+  border: 1.5px solid rgba(168, 85, 247, 0.4);
+  border-radius: 10px;
+  color: #ffffff;
+  outline: none;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+}
+
+.twofactor-digit-box:focus {
+  border-color: #c084fc;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.6), inset 0 2px 5px rgba(0, 0, 0, 0.5);
+  background: rgba(24, 8, 48, 0.95);
+  transform: translateY(-2px);
+}
+
+.twofactor-digit-divider {
+  color: #c084fc;
+  font-weight: 700;
+  font-size: 20px;
+  user-select: none;
+}
+
+.twofactor-error-msg {
+  color: #f87171;
+  font-size: 12.5px;
+  text-align: center;
+  margin: 8px 0;
+  display: none;
+}
+
+.twofactor-submit-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 11px 0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
+  transition: all 0.25s ease;
+  margin-top: 8px;
+}
+
+.twofactor-submit-btn:hover {
+  background: linear-gradient(135deg, #c084fc 0%, #9333ea 100%);
+  box-shadow: 0 6px 28px rgba(168, 85, 247, 0.6);
+  transform: translateY(-1px);
+}
+
+.twofactor-btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.twofactor-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #ffffff;
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+/* Резервные коды */
+.twofactor-backup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 10px;
+  padding: 12px;
+  margin: 14px 0;
+}
+
+.twofactor-backup-code {
+  font-family: monospace;
+  font-size: 13px;
+  color: #e9d5ff;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 6px 8px;
+  border-radius: 6px;
+  user-select: all;
+  text-align: center;
+}
