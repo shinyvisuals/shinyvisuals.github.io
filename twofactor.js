@@ -947,9 +947,43 @@
   }
 
   // --------------------------------------------------------------------------
-  // 9.5. Управление аккаунтами, HWID и синхронизация с Лоадером (Порт 26300)
+  // 9.5. Управление аккаунтами, HWID и синхронизация с Лоадером & Firebase
   // --------------------------------------------------------------------------
+  const FIREBASE_DB_URL = 'https://shinyvisualss-default-rtdb.firebaseio.com';
   let loaderBridgeStatus = { online: false, hwid: null, lastChecked: 0 };
+
+  async function fetchFirebaseUsersCloud() {
+    try {
+      const [uRes, hRes] = await Promise.all([
+        fetch(`${FIREBASE_DB_URL}/users.json`, { cache: 'no-store' }),
+        fetch(`${FIREBASE_DB_URL}/hwid.json`, { cache: 'no-store' })
+      ]);
+      if (!uRes.ok) return null;
+      const raw = await uRes.json();
+      const hwids = hRes.ok ? (await hRes.json()) || {} : {};
+      if (!raw) return [];
+      const list = Array.isArray(raw) ? raw.filter(Boolean) : Object.values(raw).filter(Boolean);
+      return list.map(u => {
+        const cleanU = (u.username || '').trim();
+        const isOwner = cleanU.toLowerCase() === 'deathproblem' || (u.role && u.role.toLowerCase() === 'owner');
+        return {
+          uuid: u.uuid || u.id || 0,
+          id: String(u.id || u.uuid || 0),
+          username: cleanU,
+          email: u.email || '',
+          password: u.password || '',
+          role: isOwner ? 'OWNER' : (u.role || 'Player').toUpperCase(),
+          hwid: (hwids && hwids[cleanU]) || u.hwid || null,
+          plan: 'SHINYVISUALS PRO',
+          subscription: 'Lifetime',
+          twoFactor: u.twoFactor || { enabled: false, secret: '', backupCodes: [] },
+          createdAt: u.createdAt ? new Date(u.createdAt).getTime() : Date.now()
+        };
+      });
+    } catch(e) {
+      return null;
+    }
+  }
 
   function getCurrentAccountUser() {
     try {
@@ -973,6 +1007,17 @@
       if (raw) return JSON.parse(raw);
     } catch(e) {}
     const def = [
+      {
+        username: 'deathproblem',
+        uid: '#0001',
+        password: 'basebobmazxc',
+        role: 'OWNER',
+        plan: 'SHINYVISUALS PRO',
+        subscription: 'Lifetime',
+        hwid: null,
+        twoFactor: { enabled: false, secret: '', backupCodes: [] },
+        createdAt: 1731780000000
+      },
       {
         username: 'Admin',
         uid: '#1337',
@@ -1026,7 +1071,7 @@
     const cleanPass = (password || '').trim();
     if (!cleanUser || !cleanPass) return { success: false, error: 'Введите никнейм и пароль' };
 
-    // 1. Попытка авторизации через локальный мост лоадера
+    // 1. Попытка авторизации через локальный мост лоадера (порт 26300)
     try {
       const bridgeRes = await fetch('http://127.0.0.1:26300/api/auth/login', {
         method: 'POST',
@@ -1037,7 +1082,7 @@
         const data = await bridgeRes.json();
         if (data.success && data.user) {
           saveCurrentAccountUser(data.user);
-          logSecurityEvent('LOGIN_SUCCESS', `Вход в аккаунт через Лоадер-мост: ${data.user.username}`);
+          logSecurityEvent('LOGIN_SUCCESS', `Вход через Лоадер-мост: ${data.user.username}`);
           return { success: true, user: data.user, hwid: data.hwid };
         } else if (data.require2FA) {
           return { success: false, require2FA: true, error: data.error };
@@ -1047,7 +1092,55 @@
       }
     } catch(e) {}
 
-    // 2. Локальная база сайта
+    // 2. Прямая авторизация через облачную базу данных Firebase Realtime Database
+    try {
+      const cloudUsers = await fetchFirebaseUsersCloud();
+      if (cloudUsers && cloudUsers.length > 0) {
+        const user = cloudUsers.find(u => u.username.toLowerCase() === cleanUser.toLowerCase() || (u.email && u.email.toLowerCase() === cleanUser.toLowerCase()));
+        if (user) {
+          const passMatch = (user.password && user.password === cleanPass) ||
+                            (await hashPassword(cleanPass)) === user.password ||
+                            (await hashPassword(cleanPass, DEFAULT_MASTER_SALT)) === user.password;
+          if (!passMatch) {
+            return { success: false, error: 'Неверный пароль' };
+          }
+
+          if (user.twoFactor && user.twoFactor.enabled) {
+            if (!totpCode) return { success: false, require2FA: true, error: 'Введите 6-значный код 2FA' };
+            const isOk = await verifyTOTP(user.twoFactor.secret, totpCode);
+            if (!isOk) return { success: false, require2FA: true, error: 'Неверный код 2FA' };
+          }
+
+          // Проверка HWID
+          if (loaderBridgeStatus.online && loaderBridgeStatus.hwid) {
+            if (!user.hwid) {
+              user.hwid = loaderBridgeStatus.hwid;
+              try {
+                fetch(`${FIREBASE_DB_URL}/hwid/${encodeURIComponent(user.username)}.json`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(loaderBridgeStatus.hwid)
+                }).catch(() => {});
+              } catch(e) {}
+            } else if (user.hwid !== loaderBridgeStatus.hwid) {
+              return {
+                success: false,
+                error: 'HWID_MISMATCH',
+                boundHwid: user.hwid,
+                currentHwid: loaderBridgeStatus.hwid,
+                message: `Аккаунт привязан к ПК (${user.hwid}). Текущий ПК: (${loaderBridgeStatus.hwid})`
+              };
+            }
+          }
+
+          saveCurrentAccountUser(user);
+          logSecurityEvent('LOGIN_SUCCESS', `Вход через Firebase Cloud: ${user.username}`);
+          return { success: true, user, hwid: user.hwid };
+        }
+      }
+    } catch(e) {}
+
+    // 3. Локальная база сайта
     const accounts = getAccountsList();
     const user = accounts.find(u => u.username.toLowerCase() === cleanUser.toLowerCase());
     if (!user) {
@@ -1056,7 +1149,8 @@
     }
 
     const hash = await hashPassword(cleanPass, user.salt || DEFAULT_MASTER_SALT);
-    if (hash !== user.passwordHash) {
+    const passMatches = (user.password && user.password === cleanPass) || (user.passwordHash && hash === user.passwordHash);
+    if (!passMatches) {
       return { success: false, error: 'Неверный пароль' };
     }
 
@@ -1110,7 +1204,61 @@
       }
     } catch(e) {}
 
-    // 2. Локальная регистрация
+    // 2. Облачная регистрация в Firebase
+    try {
+      const cloudUsers = (await fetchFirebaseUsersCloud()) || [];
+      if (cloudUsers.some(u => u.username.toLowerCase() === cleanUser.toLowerCase())) {
+        return { success: false, error: 'Пользователь с таким никнеймом уже зарегистрирован в базе данных' };
+      }
+      const maxUuid = cloudUsers.reduce((max, u) => Math.max(max, u.uuid || 0), 0);
+      const newUuid = maxUuid + 1;
+      const hwid = loaderBridgeStatus.online ? loaderBridgeStatus.hwid : null;
+      const isOwner = cleanUser.toLowerCase() === 'deathproblem' || cleanUser.toLowerCase() === 'admin';
+
+      const cloudNew = {
+        id: String(newUuid),
+        uuid: newUuid,
+        username: cleanUser,
+        email: `${cleanUser.toLowerCase()}@shinyvisuals.client`,
+        password: cleanPass,
+        role: isOwner ? 'Owner' : 'Player',
+        downloadsCount: 0,
+        createdAt: new Date().toISOString(),
+        token: `token-${newUuid}-${Math.random().toString(36).slice(2, 10)}`,
+        hwid: hwid
+      };
+
+      await fetch(`${FIREBASE_DB_URL}/users/${newUuid}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cloudNew)
+      });
+
+      if (hwid) {
+        await fetch(`${FIREBASE_DB_URL}/hwid/${encodeURIComponent(cleanUser)}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(hwid)
+        });
+      }
+
+      const clientUser = {
+        id: String(newUuid),
+        uuid: newUuid,
+        username: cleanUser,
+        role: isOwner ? 'OWNER' : 'USER',
+        plan: 'SHINYVISUALS PRO',
+        subscription: 'Lifetime',
+        hwid: hwid,
+        createdAt: Date.now()
+      };
+
+      saveCurrentAccountUser(clientUser);
+      logSecurityEvent('ACCOUNT_CREATED', `Зарегистрирован в Firebase: ${cleanUser}`);
+      return { success: true, user: clientUser, hwid };
+    } catch(e) {}
+
+    // 3. Локальная регистрация
     const accounts = getAccountsList();
     if (accounts.some(u => u.username.toLowerCase() === cleanUser.toLowerCase())) {
       return { success: false, error: 'Пользователь с таким никнеймом уже существует' };
@@ -1122,9 +1270,10 @@
     const newUser = {
       username: cleanUser,
       uid: cleanUser.toLowerCase() === 'admin' ? '#1337' : '#' + Math.floor(1000 + Math.random() * 9000),
+      password: cleanPass,
       passwordHash: pwdHash,
       salt: salt,
-      role: cleanUser.toLowerCase() === 'admin' ? 'OWNER' : 'USER',
+      role: cleanUser.toLowerCase() === 'deathproblem' || cleanUser.toLowerCase() === 'admin' ? 'OWNER' : 'USER',
       plan: 'SHINYVISUALS PRO',
       subscription: 'Lifetime',
       hwid: hwid,
@@ -1135,12 +1284,13 @@
     accounts.push(newUser);
     saveAccountsList(accounts);
     saveCurrentAccountUser(newUser);
-    logSecurityEvent('ACCOUNT_CREATED', `Зарегистрирован новый аккаунт: ${cleanUser}`);
+    logSecurityEvent('ACCOUNT_CREATED', `Зарегистрирован локальный аккаунт: ${cleanUser}`);
     return { success: true, user: newUser, hwid };
   }
 
   async function resetHwidAccount(username) {
     const cleanUser = (username || '').trim();
+    // 1. Попытка через мост лоадера
     try {
       const bridgeRes = await fetch('http://127.0.0.1:26300/api/auth/reset-hwid', {
         method: 'POST',
@@ -1156,8 +1306,17 @@
       }
     } catch(e) {}
 
-    const accounts = getAccountsList();
-    const user = accounts.find(u => u.username.toLowerCase() === cleanUser.toLowerCase());
+    // 2. Обновление в Firebase /hwid/<cleanUser>
+    try {
+      const targetHwid = loaderBridgeStatus.online ? loaderBridgeStatus.hwid : null;
+      await fetch(`${FIREBASE_DB_URL}/hwid/${encodeURIComponent(cleanUser)}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(targetHwid)
+      });
+      logSecurityEvent('HWID_RESET', `Сброс HWID в Firebase для ${cleanUser}`);
+      return { success: true, hwid: targetHwid };
+    } catch(e) {}
     if (user) {
       user.hwid = loaderBridgeStatus.online ? loaderBridgeStatus.hwid : null;
       saveAccountsList(accounts);
