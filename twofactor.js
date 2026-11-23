@@ -16,28 +16,20 @@
   // --------------------------------------------------------------------------
   function detectCurrentUsername() {
     try {
-      const u1 = localStorage.getItem('shiny_username');
-      if (u1 && u1.trim()) return u1.trim();
-
       const raw = localStorage.getItem('shiny_current_user');
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && parsed.username) return parsed.username.trim();
-      }
-    } catch (e) {}
-
-    // Поиск в DOM (никнейм в шапке или профиле)
-    const candidates = document.querySelectorAll('.font-bold, .font-semibold, [class*="user"], [class*="profile"]');
-    for (let el of candidates) {
-      const txt = (el.innerText || '').trim();
-      if (txt && txt.length >= 2 && txt.length <= 20 && !txt.includes(' ') && !txt.includes('\n')) {
-        if (!['shinyvisuals', 'главная', 'функции', 'скачать', 'выйти', 'мод', 'меню'].includes(txt.toLowerCase())) {
-          return txt;
+        if (parsed && parsed.username && typeof parsed.username === 'string' && parsed.username.trim()) {
+          return parsed.username.trim();
         }
       }
-    }
 
-    return 'deathproblem';
+      const u1 = localStorage.getItem('shiny_username');
+      if (u1 && typeof u1 === 'string' && u1.trim()) return u1.trim();
+    } catch (e) {}
+
+    // Если пользователь не вошел в систему — строго возвращаем null
+    return null;
   }
 
   function get2FAConfig(userOverride) {
@@ -257,6 +249,11 @@
     closeActiveModal();
 
     const username = detectCurrentUsername();
+    if (!username) {
+      alert('Сначала войдите в свой аккаунт ShinyVisuals!');
+      return;
+    }
+
     const secret = generateSecret(16);
     pendingSecret = secret;
 
@@ -417,8 +414,9 @@
   // --------------------------------------------------------------------------
   function openDisable2FAModal() {
     closeActiveModal();
-    const cfg = get2FAConfig();
-    const username = cfg.username || detectCurrentUsername();
+    const username = detectCurrentUsername();
+    if (!username) return;
+    const cfg = get2FAConfig(username);
 
     const backdrop = document.createElement('div');
     backdrop.className = 'twofactor-modal-backdrop';
@@ -614,40 +612,85 @@
   // --------------------------------------------------------------------------
   function injectFloatingSecurityButton() {
     let btn = document.getElementById('shiny2faFloatingBtn');
-    if (btn) btn.remove();
+    const username = detectCurrentUsername();
 
-    const cfg = get2FAConfig();
-    btn = document.createElement('div');
-    btn.className = 'twofactor-float-btn';
-    btn.id = 'shiny2faFloatingBtn';
+    // Если пользователь НЕ вошел в аккаунт — кнопка НЕ отображается!
+    if (!username) {
+      if (btn) btn.remove();
+      return;
+    }
+
+    if (localStorage.getItem('shiny_dismiss_2fa_badge') === 'true') {
+      if (btn) btn.remove();
+      return;
+    }
+
+    const cfg = get2FAConfig(username);
+    if (!btn) {
+      btn = document.createElement('div');
+      btn.className = 'twofactor-float-btn';
+      btn.id = 'shiny2faFloatingBtn';
+      document.body.appendChild(btn);
+    }
 
     if (cfg.enabled) {
       btn.innerHTML = `
         <span style="font-size:16px;">🛡️</span>
         <span>2FA: <strong style="color:#4ade80;">Включено</strong></span>
+        <span class="twofactor-float-close" title="Скрыть">&times;</span>
       `;
-      btn.onclick = openDisable2FAModal;
+      btn.onclick = (e) => {
+        if (e.target && e.target.classList.contains('twofactor-float-close')) {
+          e.stopPropagation();
+          btn.remove();
+          localStorage.setItem('shiny_dismiss_2fa_badge', 'true');
+          return;
+        }
+        openDisable2FAModal();
+      };
     } else {
       btn.innerHTML = `
         <span style="font-size:16px;">🛡️</span>
         <span>2FA: <strong style="color:#c084fc;">Подключить</strong></span>
+        <span class="twofactor-float-close" title="Скрыть">&times;</span>
       `;
-      btn.onclick = openGoogleAuthSetupModal;
+      btn.onclick = (e) => {
+        if (e.target && e.target.classList.contains('twofactor-float-close')) {
+          e.stopPropagation();
+          btn.remove();
+          localStorage.setItem('shiny_dismiss_2fa_badge', 'true');
+          return;
+        }
+        openGoogleAuthSetupModal();
+      };
     }
-
-    document.body.appendChild(btn);
   }
 
   function injectAccountModalRow() {
+    const existing = document.getElementById('shiny2faModalRow');
+    const username = detectCurrentUsername();
+    if (!username) {
+      if (existing) existing.remove();
+      return;
+    }
+
     const modal = document.querySelector('.max-w-md, [role="dialog"]');
     if (!modal) return;
 
-    const existing = document.getElementById('shiny2faModalRow');
-    const cfg = get2FAConfig();
+    // Не внедряем в окно входа или регистрации
+    const modalText = (modal.innerText || '').toLowerCase();
+    if (modalText.includes('вход в аккаунт') || modalText.includes('регистрация') || modal.querySelector('form')) {
+      if (existing) existing.remove();
+      return;
+    }
+
+    const cfg = get2FAConfig(username);
 
     if (existing) {
       const desc = existing.querySelector('.shiny-2fa-desc');
       if (desc) desc.textContent = cfg.enabled ? '✓ Защита активна (Google Authenticator)' : 'Нажмите для подключения Google Authenticator';
+      const actionBtn = existing.querySelector('.shiny-2fa-action-btn');
+      if (actionBtn) actionBtn.textContent = cfg.enabled ? 'Отключить' : 'Подключить';
       return;
     }
 
@@ -702,12 +745,14 @@
     refreshUI();
     hookLoginForm();
 
+    window.addEventListener('storage', refreshUI);
+
     let raf = null;
     const observer = new MutationObserver(() => {
       if (!raf) {
         raf = requestAnimationFrame(() => {
           raf = null;
-          injectAccountModalRow();
+          refreshUI();
         });
       }
     });

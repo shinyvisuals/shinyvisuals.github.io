@@ -34,6 +34,26 @@
   transform: translateY(-2px);
 }
 
+.twofactor-float-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  font-size: 16px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.45);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.twofactor-float-close:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.2);
+}
+
 /* Строка 2FA в окне профиля / аккаунта */
 .shiny-2fa-modal-row {
   background: rgba(14, 5, 28, 0.75);
