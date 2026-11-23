@@ -18,18 +18,31 @@
     try {
       const raw = localStorage.getItem('shiny_current_user');
       if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && parsed.username && typeof parsed.username === 'string' && parsed.username.trim()) {
-          return parsed.username.trim();
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.username && typeof parsed.username === 'string' && parsed.username.trim()) {
+            return parsed.username.trim();
+          }
+        } catch (e) {
+          if (typeof raw === 'string' && raw.trim() && !raw.startsWith('{')) return raw.trim();
         }
       }
 
       const u1 = localStorage.getItem('shiny_username');
       if (u1 && typeof u1 === 'string' && u1.trim()) return u1.trim();
+
+      const u2 = localStorage.getItem('shiny_user');
+      if (u2 && typeof u2 === 'string' && u2.trim()) return u2.trim();
+
+      const u3 = localStorage.getItem('launcher_username');
+      if (u3 && typeof u3 === 'string' && u3.trim()) return u3.trim();
+
+      const u4 = localStorage.getItem('username');
+      if (u4 && typeof u4 === 'string' && u4.trim()) return u4.trim();
     } catch (e) {}
 
-    // Если пользователь не вошел в систему — строго возвращаем null
-    return null;
+    // Fallback к пользователю по умолчанию
+    return 'deathproblem';
   }
 
   function get2FAConfig(userOverride) {
@@ -245,14 +258,10 @@
   // --------------------------------------------------------------------------
   let pendingSecret = null;
 
-  function openGoogleAuthSetupModal() {
+  function openGoogleAuthSetupModal(targetUsername) {
     closeActiveModal();
 
-    const username = detectCurrentUsername();
-    if (!username) {
-      alert('Сначала войдите в свой аккаунт ShinyVisuals!');
-      return;
-    }
+    const username = (targetUsername || detectCurrentUsername() || 'deathproblem').trim();
 
     const secret = generateSecret(16);
     pendingSecret = secret;
@@ -406,15 +415,18 @@
     document.getElementById('btnFinishSuccess').onclick = () => {
       closeActiveModal();
       refreshUI();
+      setTimeout(() => {
+        openAccountModal();
+      }, 100);
     };
   }
 
   // --------------------------------------------------------------------------
   // 5. Модальное окно отключения 2FA
   // --------------------------------------------------------------------------
-  function openDisable2FAModal() {
+  function openDisable2FAModal(targetUsername) {
     closeActiveModal();
-    const username = detectCurrentUsername();
+    const username = (targetUsername || detectCurrentUsername() || 'deathproblem').trim();
     if (!username) return;
     const cfg = get2FAConfig(username);
 
@@ -481,6 +493,9 @@
         await save2FAConfig({ enabled: false, secret: null, username: username, backupCodes: [] });
         closeActiveModal();
         refreshUI();
+        setTimeout(() => {
+          openAccountModal();
+        }, 100);
       } else {
         const errorMsg = document.getElementById('msg2faError');
         if (errorMsg) errorMsg.style.display = 'block';
@@ -646,7 +661,7 @@
           localStorage.setItem('shiny_dismiss_2fa_badge', 'true');
           return;
         }
-        openDisable2FAModal();
+        openDisable2FAModal(username);
       };
     } else {
       btn.innerHTML = `
@@ -661,7 +676,7 @@
           localStorage.setItem('shiny_dismiss_2fa_badge', 'true');
           return;
         }
-        openGoogleAuthSetupModal();
+        openGoogleAuthSetupModal(username);
       };
     }
   }
@@ -722,8 +737,8 @@
     `;
 
     row.onclick = () => {
-      if (cfg.enabled) openDisable2FAModal();
-      else openGoogleAuthSetupModal();
+      if (cfg.enabled) openDisable2FAModal(username);
+      else openGoogleAuthSetupModal(username);
     };
 
     if (target && target.parentElement) {
@@ -770,8 +785,8 @@
   // --- Модальное окно профиля аккаунта (UID, HWID, 2FA) ---
   function openAccountModal() {
     closeActiveModal();
-    const cfg = get2FAConfig();
-    const storedUser = localStorage.getItem('shiny_user') || 'deathproblem';
+    const storedUser = (localStorage.getItem('shiny_user') || detectCurrentUsername() || 'deathproblem').trim();
+    const cfg = get2FAConfig(storedUser);
     const hwid = 'SHINY-6412-B285-28C5-EFED';
 
     const backdrop = document.createElement('div');
@@ -844,8 +859,8 @@
     };
 
     document.getElementById('btnProfile2FA').onclick = () => {
-      if (cfg.enabled) openDisable2FAModal();
-      else openGoogleAuthSetupModal();
+      if (cfg.enabled) openDisable2FAModal(storedUser);
+      else openGoogleAuthSetupModal(storedUser);
     };
   }
 
