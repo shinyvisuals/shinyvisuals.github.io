@@ -174,24 +174,50 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.disabled = true;
         btn.textContent = 'Подтверждение...';
 
+        let approvedCloud = false;
+        let approvedLocally = false;
+
+        // 1. Надёжный облачный канал Firebase (HTTPS -> HTTPS, никогда не блокируется браузером)
         try {
-          const resp = await fetch('http://localhost:26300/api/auth/approve-web-login', {
-            method: 'POST',
+          const fbResp = await fetch(`https://shinyvisualss-default-rtdb.firebaseio.com/hwid/auth_token_${encodeURIComponent(token)}.json`, {
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token, username: storedUser })
+            body: JSON.stringify({
+              approved: true,
+              username: storedUser,
+              timestamp: Date.now()
+            })
           });
-          const data = await resp.json();
-          if (data.success) {
-            overlay.remove();
-            window.history.replaceState({}, document.title, window.location.pathname);
-            if (window.showToast) window.showToast(`✓ Вход в лаунчер подтверждён под аккаунтом ${storedUser}!`, '✨');
-          } else {
-            alert(data.error || 'Ошибка подтверждения входа');
-            btn.disabled = false;
-            btn.textContent = 'Подтвердить вход';
+          if (fbResp.ok) {
+            approvedCloud = true;
           }
-        } catch (err) {
-          alert('Не удалось связаться с лаунчером на порту 26300. Убедитесь, что ShinyVisuals Loader запущен на этом ПК.');
+        } catch (fbErr) {
+          console.warn('[WebAuth] Firebase sync:', fbErr);
+        }
+
+        // 2. Локальный сервер на 127.0.0.1 и localhost
+        for (const host of ['127.0.0.1:26300', 'localhost:26300']) {
+          try {
+            const resp = await fetch(`http://${host}/api/auth/approve-web-login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token, username: storedUser })
+            });
+            const data = await resp.json();
+            if (data && data.success) {
+              approvedLocally = true;
+              break;
+            }
+          } catch (localErr) {}
+        }
+
+        if (approvedCloud || approvedLocally) {
+          overlay.remove();
+          window.history.replaceState({}, document.title, window.location.pathname);
+          if (window.showToast) window.showToast(`✓ Вход в лаунчер подтверждён под аккаунтом ${storedUser}!`, '✨');
+          else alert(`Вход в лаунчер успешно подтверждён под аккаунтом ${storedUser}! Переключитесь в окно лаунчера.`);
+        } else {
+          alert('Не удалось подтвердить вход. Убедитесь, что интернет подключен и лаунчер запущен.');
           btn.disabled = false;
           btn.textContent = 'Подтвердить вход';
         }
