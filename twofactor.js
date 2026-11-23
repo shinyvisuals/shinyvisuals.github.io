@@ -681,76 +681,10 @@
     }
   }
 
-  function injectAccountModalRow() {
-    const existing = document.getElementById('shiny2faModalRow');
-    const username = detectCurrentUsername();
-    if (!username) {
-      if (existing) existing.remove();
-      return;
-    }
-
-    const modal = document.querySelector('.max-w-md, [role="dialog"]');
-    if (!modal) return;
-
-    // Не внедряем в окно входа или регистрации
-    const modalText = (modal.innerText || '').toLowerCase();
-    if (modalText.includes('вход в аккаунт') || modalText.includes('регистрация') || modal.querySelector('form')) {
-      if (existing) existing.remove();
-      return;
-    }
-
-    const cfg = get2FAConfig(username);
-
-    if (existing) {
-      const desc = existing.querySelector('.shiny-2fa-desc');
-      if (desc) desc.textContent = cfg.enabled ? '✓ Защита активна (Google Authenticator)' : 'Нажмите для подключения Google Authenticator';
-      const actionBtn = existing.querySelector('.shiny-2fa-action-btn');
-      if (actionBtn) actionBtn.textContent = cfg.enabled ? 'Отключить' : 'Подключить';
-      return;
-    }
-
-    // Ищем подходящее место в модалке (перед кнопкой выхода или после полей)
-    const buttons = modal.querySelectorAll('button');
-    let target = null;
-    for (let btn of buttons) {
-      const txt = (btn.textContent || '').trim().toLowerCase();
-      if (txt.includes('выйти') || txt.includes('сменить') || txt.includes('hwid') || txt.includes('скачать')) {
-        target = btn.parentElement || btn;
-        break;
-      }
-    }
-
-    const row = document.createElement('div');
-    row.id = 'shiny2faModalRow';
-    row.className = 'shiny-2fa-modal-row';
-    row.innerHTML = `
-      <div class="shiny-2fa-modal-left">
-        <span class="shiny-2fa-icon">🛡️</span>
-        <div class="shiny-2fa-text">
-          <span class="shiny-2fa-title">Google Authenticator (2FA)</span>
-          <span class="shiny-2fa-desc">${cfg.enabled ? '✓ Защита активна' : 'Нажмите для подключения защиты'}</span>
-        </div>
-      </div>
-      <button type="button" class="shiny-2fa-action-btn">
-        ${cfg.enabled ? 'Отключить' : 'Подключить'}
-      </button>
-    `;
-
-    row.onclick = () => {
-      if (cfg.enabled) openDisable2FAModal(username);
-      else openGoogleAuthSetupModal(username);
-    };
-
-    if (target && target.parentElement) {
-      target.parentElement.insertBefore(row, target);
-    } else {
-      modal.appendChild(row);
-    }
-  }
-
   function refreshUI() {
     injectFloatingSecurityButton();
-    injectAccountModalRow();
+    const existing = document.getElementById('shiny2faModalRow');
+    if (existing) existing.remove();
   }
 
   // --------------------------------------------------------------------------
