@@ -1,0 +1,642 @@
+/* ==========================================================================
+   ShinyVisuals — Obsidian Cyber-Forge Design System
+   Crafted following Hallmark, Impeccable & UI-UX-Pro-Max Design Standards
+   Zero AI Slop • Crisp Obsidian Glass • Purposeful Typography • Tactile Surfaces
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root {
+  --sv-canvas: #07080c;
+  --sv-surface: rgba(13, 16, 24, 0.82);
+  --sv-surface-elevated: rgba(20, 24, 38, 0.9);
+  --sv-surface-card: linear-gradient(180deg, rgba(18, 21, 33, 0.78) 0%, rgba(10, 12, 20, 0.88) 100%);
+  
+  --sv-border-subtle: rgba(255, 255, 255, 0.08);
+  --sv-border-highlight: rgba(255, 255, 255, 0.16);
+  --sv-border-accent: rgba(168, 85, 247, 0.4);
+  
+  --sv-text-primary: #f8fafc;
+  --sv-text-secondary: #94a3b8;
+  --sv-text-muted: #64748b;
+  
+  --sv-accent-purple: #a855f7;
+  --sv-accent-purple-glow: rgba(168, 85, 247, 0.35);
+  --sv-accent-cyan: #38bdf8;
+  --sv-accent-emerald: #10b981;
+  --sv-accent-amber: #f59e0b;
+  --sv-accent-rose: #f43f5e;
+  
+  --sv-font-display: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --sv-font-mono: 'Space Grotesk', ui-monospace, monospace;
+  --sv-font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  --sv-shadow-card: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 18px 40px -12px rgba(0, 0, 0, 0.75);
+  --sv-shadow-hover: inset 0 1px 0 0 rgba(255, 255, 255, 0.22), 0 24px 50px -12px rgba(168, 85, 247, 0.25);
+}
+
+/* --------------------------------------------------------------------------
+   1. Typography & Hierarchy (Impeccable & Hallmark standards)
+   -------------------------------------------------------------------------- */
+body {
+  background-color: var(--sv-canvas) !important;
+  color: var(--sv-text-primary) !important;
+  font-family: var(--sv-font-body) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle architectural mesh grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.14) 0%, transparent 60%),
+    radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.08) 0%, transparent 45%),
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+  background-position: 0 0, 0 0, -1px -1px, -1px -1px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* Section scroll margins to prevent sticky navbar occlusion */
+section, [id] {
+  scroll-margin-top: 110px !important;
+}
+
+/* Display Headings */
+h1, h2, h3, .sv-font-display {
+  font-family: var(--sv-font-display) !important;
+  letter-spacing: -0.03em !important;
+  font-weight: 800 !important;
+  color: var(--sv-text-primary) !important;
+}
+
+/* De-slop section headers & badges */
+.sv-section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  color: #c084fc;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--sv-font-mono);
+  margin-bottom: 14px;
+}
+
+/* --------------------------------------------------------------------------
+   2. Interactive Before / After Visual Comparison Slider
+   -------------------------------------------------------------------------- */
+.sv-comparison-section {
+  max-width: 1180px;
+  margin: 72px auto;
+  padding: 0 24px;
+}
+
+.sv-comparison-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.sv-comparison-header h2 {
+  font-size: clamp(28px, 3.4vw, 44px);
+  line-height: 1.15;
+  margin: 0 0 12px 0;
+}
+
+.sv-comparison-header p {
+  color: var(--sv-text-secondary);
+  font-size: 16px;
+  max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.sv-comparison-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--sv-border-subtle);
+  box-shadow: var(--sv-shadow-card);
+  user-select: none;
+  touch-action: pan-y;
+  background: #000;
+}
+
+.sv-comparison-image-wrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.sv-comparison-before {
+  position: absolute;
+  inset: 0;
+  background: #111;
+  background-size: cover;
+  background-position: center;
+}
+
+.sv-comparison-after {
+  position: absolute;
+  inset: 0;
+  background: #1a0b2e;
+  background-size: cover;
+  background-position: center;
+  clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%);
+  transition: clip-path 0.05s ease-out;
+}
+
+/* Custom procedural artwork canvases for Before / After */
+.sv-canvas-vanilla {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #182230 0%, #101820 60%, #0d1218 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.sv-canvas-shiny {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 20%, rgba(168, 85, 247, 0.4) 0%, transparent 70%),
+              radial-gradient(circle at 80% 40%, rgba(56, 189, 248, 0.25) 0%, transparent 60%),
+              linear-gradient(180deg, #10061e 0%, #080310 65%, #05020a 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Watermark badges inside comparison */
+.sv-compare-badge {
+  position: absolute;
+  bottom: 20px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sv-compare-badge-left {
+  left: 20px;
+  background: rgba(15, 20, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+}
+
+.sv-compare-badge-right {
+  right: 20px;
+  background: rgba(40, 14, 75, 0.85);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  color: #f3f0fb;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.35);
+}
+
+/* Central Drag Handle */
+.sv-compare-slider-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.8), 0 0 32px rgba(56, 189, 248, 0.6);
+  z-index: 20;
+  transform: translateX(-50%);
+  cursor: ew-resize;
+  pointer-events: none;
+}
+
+.sv-compare-slider-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a855f7, #38bdf8);
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 0 24px rgba(168, 85, 247, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: ew-resize;
+  pointer-events: auto;
+  transition: transform 0.15s ease;
+}
+
+.sv-compare-slider-knob:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* Visual elements inside comparison views */
+.sv-hud-item-preview {
+  position: absolute;
+  bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.sv-knife-3d-model {
+  font-size: 80px;
+  filter: drop-shadow(0 15px 30px rgba(168, 85, 247, 0.6));
+  animation: svKnifeBob 3s ease-in-out infinite;
+}
+
+@keyframes svKnifeBob {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-10px) rotate(5deg); }
+}
+
+/* --------------------------------------------------------------------------
+   3. Interactive 3D Knives & Cosmetics Showcase (Bento Grid)
+   -------------------------------------------------------------------------- */
+.sv-showcase-section {
+  max-width: 1180px;
+  margin: 80px auto;
+  padding: 0 24px;
+}
+
+.sv-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 36px;
+}
+
+.sv-filter-btn {
+  padding: 10px 20px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 600;
+  background: rgba(18, 22, 34, 0.65);
+  border: 1px solid var(--sv-border-subtle);
+  color: var(--sv-text-secondary);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+}
+
+.sv-filter-btn:hover {
+  color: var(--sv-text-primary);
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(26, 32, 48, 0.85);
+  transform: translateY(-1px);
+}
+
+.sv-filter-btn.active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(56, 189, 248, 0.2));
+  border-color: rgba(168, 85, 247, 0.6);
+  color: #ffffff;
+  box-shadow: 0 4px 18px rgba(168, 85, 247, 0.2);
+}
+
+.sv-showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 22px;
+}
+
+.sv-item-card {
+  position: relative;
+  background: var(--sv-surface-card);
+  border: 1px solid var(--sv-border-subtle);
+  border-radius: 18px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: var(--sv-shadow-card);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.sv-item-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--sv-border-accent);
+  box-shadow: var(--sv-shadow-hover);
+}
+
+.sv-item-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.12) 0%, rgba(10, 12, 18, 0.6) 80%);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.sv-item-preview-icon {
+  font-size: 58px;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sv-item-card:hover .sv-item-preview-icon {
+  transform: scale(1.15) rotate(8deg);
+}
+
+.sv-rarity-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  font-family: var(--sv-font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rarity-mythic {
+  background: rgba(236, 72, 153, 0.2);
+  border: 1px solid rgba(236, 72, 153, 0.6);
+  color: #f472b6;
+  box-shadow: 0 0 12px rgba(236, 72, 153, 0.3);
+}
+
+.rarity-legendary {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.6);
+  color: #fbbf24;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+.rarity-rare {
+  background: rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.6);
+  color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+}
+
+.sv-item-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--sv-text-primary);
+  font-family: var(--sv-font-display);
+}
+
+.sv-item-desc {
+  font-size: 13px;
+  color: var(--sv-text-secondary);
+  line-height: 1.5;
+  margin: 0 0 18px 0;
+  flex-grow: 1;
+}
+
+.sv-item-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sv-btn-inspect {
+  width: 100%;
+  padding: 9px 16px;
+  border-radius: 10px;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #e9d5ff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.sv-btn-inspect:hover {
+  background: rgba(168, 85, 247, 0.3);
+  border-color: #c084fc;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.3);
+  transform: translateY(-1px);
+}
+
+.sv-btn-inspect:active {
+  transform: scale(0.98);
+}
+
+/* --------------------------------------------------------------------------
+   4. 3D Inspection Modal (Weapon & Cosmetic 3D Stage)
+   -------------------------------------------------------------------------- */
+.sv-inspect-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(4, 5, 8, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: svFadeIn 0.25s ease-out;
+}
+
+.sv-inspect-box {
+  width: 100%;
+  max-width: 580px;
+  background: linear-gradient(180deg, rgba(22, 26, 40, 0.95) 0%, rgba(12, 14, 22, 0.98) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2), 0 24px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(168, 85, 247, 0.25);
+  border-radius: 24px;
+  padding: 30px;
+  position: relative;
+  animation: svModalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sv-inspect-stage {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.18) 0%, rgba(10, 12, 18, 0.9) 75%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  margin: 16px 0 20px 0;
+}
+
+.sv-stage-icon {
+  font-size: 96px;
+  filter: drop-shadow(0 15px 35px rgba(168, 85, 247, 0.65));
+  animation: svSpinSlow 6s ease-in-out infinite;
+  cursor: grab;
+}
+
+@keyframes svSpinSlow {
+  0% { transform: rotateY(0deg) translateY(0); }
+  50% { transform: rotateY(180deg) translateY(-8px); }
+  100% { transform: rotateY(360deg) translateY(0); }
+}
+
+.sv-specs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 16px 0 24px 0;
+}
+
+.sv-spec-tile {
+  background: rgba(12, 15, 24, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.sv-spec-label {
+  font-size: 11px;
+  color: var(--sv-text-muted);
+  text-transform: uppercase;
+  font-family: var(--sv-font-mono);
+  margin-bottom: 4px;
+}
+
+.sv-spec-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sv-text-primary);
+}
+
+/* --------------------------------------------------------------------------
+   5. FPS Matrix & Performance Bento Box
+   -------------------------------------------------------------------------- */
+.sv-perf-card {
+  background: var(--sv-surface-card);
+  border: 1px solid var(--sv-border-subtle);
+  border-radius: 20px;
+  padding: 28px;
+  margin: 40px auto;
+  max-width: 1180px;
+  box-shadow: var(--sv-shadow-card);
+}
+
+.sv-perf-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.sv-perf-meter {
+  flex: 1;
+  min-width: 280px;
+}
+
+.sv-bar-container {
+  height: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin: 8px 0;
+  position: relative;
+}
+
+.sv-bar-fill-vanilla {
+  height: 100%;
+  width: 55%;
+  background: #64748b;
+  border-radius: 9999px;
+}
+
+.sv-bar-fill-shiny {
+  height: 100%;
+  width: 95%;
+  background: linear-gradient(90deg, #a855f7, #38bdf8);
+  border-radius: 9999px;
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.6);
+}
+
+/* --------------------------------------------------------------------------
+   6. Modern Glass Toast Notification
+   -------------------------------------------------------------------------- */
+.sv-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(50px);
+  z-index: 100000;
+  background: rgba(18, 22, 34, 0.95);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(168, 85, 247, 0.35);
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.sv-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* Animations */
+@keyframes svFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes svModalPop {
+  from { transform: scale(0.95) translateY(10px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
