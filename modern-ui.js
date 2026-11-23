@@ -220,12 +220,17 @@
   // 4. Hook Downloads for Toast Feedback
   // --------------------------------------------------------------------------
   function hookDownloadButtons() {
-    const downloadBtns = document.querySelectorAll('a[href*="download"], a[href*=".jar"]');
+    const downloadBtns = document.querySelectorAll('a[href*="download"], a[href*=".jar"], a[href*=".exe"]');
     downloadBtns.forEach(btn => {
       if (btn.dataset.svHooked) return;
       btn.dataset.svHooked = 'true';
       btn.addEventListener('click', () => {
-        showToast('Началась загрузка ShinyVisuals 26.3 (.JAR)', '🚀');
+        const href = (btn.getAttribute('href') || '').toLowerCase();
+        if (href.includes('.exe')) {
+          showToast('Началась загрузка установщика ShinyVisuals Loader (.EXE)', '⚡');
+        } else {
+          showToast('Началась загрузка ShinyVisuals 26.3 (.JAR)', '🚀');
+        }
       });
     });
   }
