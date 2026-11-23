@@ -217,21 +217,51 @@
   }
 
   // --------------------------------------------------------------------------
-  // 4. Hook Downloads for Toast Feedback
+  // 4. Hook & Block Loader Downloads
   // --------------------------------------------------------------------------
-  function hookDownloadButtons() {
-    const downloadBtns = document.querySelectorAll('a[href*="download"], a[href*=".jar"], a[href*=".exe"]');
-    downloadBtns.forEach(btn => {
-      if (btn.dataset.svHooked) return;
-      btn.dataset.svHooked = 'true';
-      btn.addEventListener('click', () => {
-        const href = (btn.getAttribute('href') || '').toLowerCase();
-        if (href.includes('.exe')) {
-          showToast('Началась загрузка установщика ShinyVisuals Loader (.EXE)', '⚡');
-        } else {
-          showToast('Началась загрузка ShinyVisuals 26.3 (.JAR)', '🚀');
+  function lockLoaderDownloads() {
+    const allLinks = document.querySelectorAll('a, button');
+    allLinks.forEach(el => {
+      const href = (el.getAttribute('href') || '').toLowerCase();
+      const txt = (el.textContent || '').toLowerCase();
+      const isLoader = href.includes('.exe') || 
+                       href.includes('loader') || 
+                       href.includes('setup') ||
+                       txt.includes('установщик') || 
+                       txt.includes('лаунчер') || 
+                       txt.includes('лоадер') || 
+                       (txt.includes('скачать') && txt.includes('.exe'));
+
+      if (isLoader && !txt.includes('.jar')) {
+        // Block loader downloads
+        el.removeAttribute('download');
+        el.setAttribute('href', 'javascript:void(0)');
+        el.style.opacity = '0.55';
+        el.style.cursor = 'not-allowed';
+        el.style.filter = 'grayscale(0.6)';
+        
+        if (!el.dataset.svLocked) {
+          el.dataset.svLocked = 'true';
+          el.innerHTML = '🔒 Скачивание временно закрыто';
+          el.title = 'Скачивание лоадера временно приостановлено';
         }
-      });
+
+        if (!el.dataset.svClickBlocked) {
+          el.dataset.svClickBlocked = 'true';
+          el.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showToast('Скачивание лоадера временно приостановлено', '🔒');
+          }, true);
+        }
+      } else if (href.includes('.jar') || txt.includes('.jar')) {
+        if (!el.dataset.svHooked) {
+          el.dataset.svHooked = 'true';
+          el.addEventListener('click', () => {
+            showToast('Началась загрузка ShinyVisuals 26.3 (.JAR)', '🚀');
+          });
+        }
+      }
     });
   }
 
@@ -241,7 +271,7 @@
   function runMount() {
     safeDeslopDOM();
     createComparisonSection();
-    hookDownloadButtons();
+    lockLoaderDownloads();
   }
 
   setTimeout(runMount, 800);
@@ -253,7 +283,7 @@
     deslopDebounce = setTimeout(() => {
       deslopDebounce = null;
       safeDeslopDOM();
-      hookDownloadButtons();
+      lockLoaderDownloads();
     }, 1500);
   });
 
