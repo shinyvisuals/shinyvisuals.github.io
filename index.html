@@ -74,7 +74,7 @@
         </button>
 
         <a href="#download" class="sv-btn-primary text-xs px-4 py-2 rounded-lg font-semibold flex items-center gap-2 shadow-sm">
-          <span>Скачать .JAR</span>
+          <span>Скачать лоадер</span>
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
           </svg>
@@ -110,11 +110,11 @@
 
       <!-- CTA Buttons -->
       <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-        <a href="./downloads/shinyvisuals-26.3.jar" download class="sv-btn-primary w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-purple-500/15">
+        <a href="#download" class="sv-btn-primary w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-purple-500/15">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
           </svg>
-          <span>Скачать ShinyVisuals 26.3 (.JAR)</span>
+          <span>⚡ Скачать ShinyVisuals Loader</span>
         </a>
 
         <a href="#compare" class="sv-btn-secondary w-full sm:w-auto px-6 py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2">
@@ -381,92 +381,62 @@
     </section>
 
     <!-- 5. DOWNLOAD & GET STARTED SECTION -->
-    <section id="download" class="py-16 md:py-24 border-t border-white/[0.06] max-w-5xl mx-auto px-6">
-      <div class="text-center max-w-2xl mx-auto mb-16">
+    <section id="download" class="py-16 md:py-24 border-t border-white/[0.06] max-w-4xl mx-auto px-6">
+      <div class="text-center max-w-2xl mx-auto mb-14">
         <span class="text-xs font-mono uppercase tracking-wider text-purple-400 font-semibold mb-2 block">Загрузка клиента</span>
         <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-display mb-4">
-          Начните играть с ShinyVisuals
+          ShinyVisuals Client Loader
         </h2>
         <p class="text-sm sm:text-base text-zinc-400">
-          Установите готовый .JAR мод в папку mods вашего лаунчера за 30 секунд.
+          Автономный лаунчер-установщик в 1 клик для Windows.
         </p>
       </div>
 
-      <!-- Download Cards Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
-        
-        <!-- Card 1: Primary .JAR (Recommended) -->
-        <div class="p-8 rounded-2xl bg-gradient-to-b from-purple-500/[0.07] to-transparent border border-purple-500/30 flex flex-col justify-between shadow-xl shadow-purple-500/5">
+      <!-- Single Centered Loader Card -->
+      <div class="max-w-xl mx-auto mb-16">
+        <div class="p-8 sm:p-10 rounded-2xl bg-gradient-to-b from-purple-500/[0.08] via-white/[0.02] to-transparent border border-purple-500/30 flex flex-col justify-between shadow-2xl shadow-purple-500/10">
           <div>
-            <div class="flex items-center justify-between mb-4">
-              <span class="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-mono font-semibold">
-                Рекомендовано
-              </span>
-              <span class="text-xs font-mono text-zinc-400">82.4 МБ • SHA-256</span>
-            </div>
-            <h3 class="text-2xl font-bold text-white mb-2 font-display">ShinyVisuals 26.3 (.JAR)</h3>
-            <p class="text-sm text-zinc-400 mb-6 leading-relaxed">
-              Готовый файл модификации. Подходит для абсолютно любого лаунчера: TLauncher, Prism Launcher, Modrinth, CurseForge, Legacy Launcher и официального Minecraft Launcher.
-            </p>
-          </div>
-
-          <div>
-            <a href="./downloads/shinyvisuals-26.3.jar" download class="sv-btn-primary w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-purple-500/20">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              <span>Скачать клиент (.JAR)</span>
-            </a>
-            <div class="text-[11px] text-zinc-500 text-center font-mono mt-3">
-              Совместимо с Fabric 0.165.0+ и Minecraft 1.21.4
-            </div>
-          </div>
-        </div>
-
-        <!-- Card 2: ShinyVisuals Loader (.EXE) (Temporarily Locked) -->
-        <div class="p-8 rounded-2xl bg-white/[0.02] border border-white/[0.06] flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between mb-4">
-              <span class="px-2.5 py-1 rounded-full bg-zinc-800 text-zinc-400 text-xs font-mono font-medium flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+            <div class="flex items-center justify-between mb-5">
+              <span class="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-mono font-semibold flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
                 Обновление
               </span>
-              <span class="text-xs font-mono text-zinc-500">Windows (.EXE)</span>
+              <span class="text-xs font-mono text-zinc-400">Windows (.EXE) • x64</span>
             </div>
-            <h3 class="text-2xl font-bold text-zinc-300 mb-2 font-display">ShinyVisuals Loader</h3>
-            <p class="text-sm text-zinc-400 mb-6 leading-relaxed">
-              Автономный установщик в 1 клик. В данный момент проходит техническую оптимизацию перед открытием публичного доступа.
+            
+            <h3 class="text-2xl sm:text-3xl font-bold text-white mb-3 font-display">ShinyVisuals Loader</h3>
+            <p class="text-sm text-zinc-400 mb-8 leading-relaxed">
+              Автономный установщик в 1 клик. Автоматически настраивает клиент, проверяет обновления и запускает игру без ручной возни с файлами.
             </p>
           </div>
 
           <div>
-            <button type="button" disabled class="w-full py-4 rounded-xl font-semibold text-sm bg-white/[0.04] border border-white/[0.08] text-zinc-400 cursor-not-allowed flex items-center justify-center gap-2" onclick="alert('Скачивание лоадера временно приостановлено разработчиком на время обновления.')">
+            <button type="button" disabled class="w-full py-4 rounded-xl font-semibold text-sm bg-white/[0.04] border border-white/[0.08] text-zinc-400 cursor-not-allowed flex items-center justify-center gap-2.5 transition-all" onclick="window.showToast ? window.showToast('Скачивание лоадера временно приостановлено на время обновления', '🔒') : alert('Скачивание лоадера временно приостановлено на время обновления.')">
               <svg class="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
               <span>🔒 Скачивание временно закрыто</span>
             </button>
-            <div class="text-[11px] text-zinc-500 text-center font-mono mt-3">
-              Используйте прямую установку .JAR выше
+            <div class="text-xs text-zinc-500 text-center font-mono mt-3">
+              Идёт полировка и оптимизация новой версии • Скоро открытие
             </div>
           </div>
         </div>
-
       </div>
 
-      <!-- Quick 3-Step Setup Guide -->
+      <!-- Quick 3-Step Setup Guide for Loader -->
       <div class="p-6 md:p-8 rounded-2xl border border-white/[0.08] bg-white/[0.02] max-w-3xl mx-auto">
         <h4 class="text-sm font-bold text-white uppercase tracking-wider font-mono mb-6 text-center">
-          Быстрая установка мода в 3 шага
+          Как работает лоадер
         </h4>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
           <div class="flex flex-col gap-2">
             <div class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-300 font-mono font-bold flex items-center justify-center text-xs">
               1
             </div>
-            <div class="font-semibold text-white">Скачайте .JAR</div>
+            <div class="font-semibold text-white">Скачайте установщик</div>
             <div class="text-xs text-zinc-400 leading-relaxed">
-              Нажмите кнопку скачивания файла <span class="text-purple-300 font-mono">shinyvisuals-26.3.jar</span> выше.
+              Загрузите готовый файл <span class="text-purple-300 font-mono">ShinyVisualsLoader-Setup.exe</span> после открытия доступа.
             </div>
           </div>
 
@@ -474,9 +444,9 @@
             <div class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-300 font-mono font-bold flex items-center justify-center text-xs">
               2
             </div>
-            <div class="font-semibold text-white">Перенесите в mods</div>
+            <div class="font-semibold text-white">Установка в 1 клик</div>
             <div class="text-xs text-zinc-400 leading-relaxed">
-              Нажмите <kbd class="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[10px] font-mono text-zinc-200">Win+R</kbd>, введите <span class="text-zinc-300 font-mono text-[11px]">%appdata%/.minecraft/mods</span> и скопируйте файл.
+              Запустите установщик — он автоматически настроит все компоненты без прав администратора.
             </div>
           </div>
 
@@ -484,9 +454,9 @@
             <div class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-300 font-mono font-bold flex items-center justify-center text-xs">
               3
             </div>
-            <div class="font-semibold text-white">Запустите игру</div>
+            <div class="font-semibold text-white">Нажмите «Играть»</div>
             <div class="text-xs text-zinc-400 leading-relaxed">
-              Выберите версию <span class="text-purple-300 font-mono">Fabric 1.21.4</span> в вашем лаунчере и наслаждайтесь плавным визуалом!
+              Авторизуйтесь в личном кабинете и наслаждайтесь плавным визуалом и стабильным FPS!
             </div>
           </div>
         </div>

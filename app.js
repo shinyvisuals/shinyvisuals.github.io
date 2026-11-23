@@ -112,10 +112,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 4. Download Feedback Hooks
-  const jarLinks = document.querySelectorAll('a[href*=".jar"]');
-  jarLinks.forEach(link => {
-    link.addEventListener('click', () => {
-      window.showToast('Началась загрузка ShinyVisuals 26.3 (.JAR)', '🚀');
+  const downloadLinks = document.querySelectorAll('a[href*=".exe"], a[href*="download"]');
+  downloadLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href') || '';
+      if (href.startsWith('#')) return; // Smooth scroll link
+      window.showToast('Началась загрузка ShinyVisuals Loader', '⚡');
     });
   });
 });
