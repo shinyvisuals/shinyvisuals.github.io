@@ -121,9 +121,9 @@
   function createComparisonSection() {
     if (document.getElementById('svComparisonSection')) return;
 
-    // Target mounting point after hero
-    const hero = document.querySelector('section, [class*="hero"]');
-    if (!hero || !hero.parentElement) return;
+    // Target the advantages section to insert directly before it (right below the hero)
+    const advantages = document.getElementById('advantages') || document.querySelector('[id*="advantage"]');
+    if (!advantages || !advantages.parentElement) return;
 
     const section = document.createElement('section');
     section.id = 'svComparisonSection';
@@ -200,12 +200,10 @@
     `;
 
     try {
-      hero.parentElement.insertBefore(section, hero.nextSibling);
+      advantages.parentElement.insertBefore(section, advantages);
       initComparisonSlider();
     } catch (e) {
       console.warn('Safe mount fallback for comparison:', e);
-      document.body.appendChild(section);
-      initComparisonSlider();
     }
   }
 
@@ -341,8 +339,8 @@
   function createShowcaseSection() {
     if (document.getElementById('svShowcaseSection')) return;
 
-    const target = document.querySelector('[class*="feature"], [class*="benefit"], #features');
-    if (!target || !target.parentElement) return;
+    const advantages = document.getElementById('advantages') || document.querySelector('[id*="advantage"]');
+    if (!advantages || !advantages.parentElement) return;
 
     const section = document.createElement('section');
     section.id = 'svShowcaseSection';
@@ -368,12 +366,10 @@
     `;
 
     try {
-      target.parentElement.insertBefore(section, target);
+      advantages.parentElement.insertBefore(section, advantages.nextSibling);
       initShowcaseEvents();
     } catch (e) {
       console.warn('Safe mount fallback for showcase:', e);
-      document.body.appendChild(section);
-      initShowcaseEvents();
     }
   }
 
