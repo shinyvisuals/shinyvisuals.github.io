@@ -125,11 +125,15 @@
 
       <!-- CTA Buttons -->
       <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-        <a href="#download" class="sv-btn-primary w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-purple-500/15">
+        <a href="./downloads/ShinyVisualsLoader-Setup.exe" class="sv-btn-primary w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-purple-500/15" download="ShinyVisualsLoader-Setup.exe">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
           </svg>
-          <span>⚡ Скачать ShinyVisuals Loader</span>
+          <span>⚡ Скачать установщик (.EXE)</span>
+        </a>
+
+        <a href="./downloads/ShinyVisualsLoader-Setup.zip" class="sv-btn-secondary w-full sm:w-auto px-6 py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 text-purple-300 hover:text-white" download="ShinyVisualsLoader-Setup.zip">
+          <span>📦 Скачать в архиве (.ZIP)</span>
         </a>
 
         <a href="#compare" class="sv-btn-secondary w-full sm:w-auto px-6 py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2">
@@ -417,6 +421,7 @@
           </div>
 
           <div class="flex flex-col gap-3">
+            <!-- 1. Primary: Direct .EXE Installer -->
             <a href="./downloads/ShinyVisualsLoader-Setup.exe" id="btnDownloadLoader" class="sv-btn-primary w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-purple-500/25 transition-all hover:scale-[1.01]" download="ShinyVisualsLoader-Setup.exe">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -424,24 +429,46 @@
               <span>⚡ Скачать установщик ShinyVisuals (Windows .EXE)</span>
             </a>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2">
-              <a href="./downloads/shinyvisuals-26.3.jar" id="btnDownloadMod" class="sv-btn-secondary py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 text-zinc-300 hover:text-white" download="shinyvisuals-26.3.jar" title="Прямой файл мода для ручной установки в папку mods">
-                <svg class="w-3.5 h-3.5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <!-- 2. Safe ZIP Archive (Bypasses all Chrome / Edge download warnings) -->
+            <a href="./downloads/ShinyVisualsLoader-Setup.zip" id="btnDownloadLoaderZip" class="w-full py-3 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 bg-purple-500/10 border border-purple-500/30 text-purple-200 hover:bg-purple-500/20 hover:text-white transition-all shadow-sm" download="ShinyVisualsLoader-Setup.zip">
+              <svg class="w-4 h-4 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+              <span>📦 Скачать в архиве (.ZIP) — без блокировки браузера</span>
+            </a>
+
+            <!-- 3. Grid for Manual Mod / API / Loader Launch -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+              <a href="./downloads/shinyvisuals-26.3.jar" id="btnDownloadMod" class="sv-btn-secondary py-2.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 text-zinc-300 hover:text-white" download="shinyvisuals-26.3.jar" title="Прямой файл мода для ручной установки">
+                <svg class="w-3.5 h-3.5 text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 <span>Мод (.JAR)</span>
               </a>
 
-              <a href="./downloads/fabric-api-0.165.0+26.3.jar" class="sv-btn-secondary py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 text-zinc-300 hover:text-white" download="fabric-api-0.165.0+26.3.jar" title="Библиотека Fabric API 0.165.0">
-                <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              <a href="./downloads/ShinyVisuals-26.3-Mod.zip" id="btnDownloadModZip" class="sv-btn-secondary py-2.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 text-zinc-300 hover:text-white" download="ShinyVisuals-26.3-Mod.zip" title="Мод + Fabric API в одном архиве">
+                <svg class="w-3.5 h-3.5 text-purple-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                <span>Мод (.ZIP)</span>
+              </a>
+
+              <a href="./downloads/fabric-api-0.165.0+26.3.jar" class="sv-btn-secondary py-2.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 text-zinc-300 hover:text-white" download="fabric-api-0.165.0+26.3.jar" title="Библиотека Fabric API">
+                <svg class="w-3.5 h-3.5 text-zinc-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 <span>Fabric API</span>
               </a>
 
-              <button type="button" id="btnLaunchLocalLoader" class="sv-btn-secondary py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 text-zinc-300 hover:text-white cursor-pointer" onclick="openOrLaunchLoader()" title="Запустить уже установленный на ПК ShinyVisuals Loader">
-                <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <button type="button" id="btnLaunchLocalLoader" class="sv-btn-secondary py-2.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 text-zinc-300 hover:text-white cursor-pointer" onclick="openOrLaunchLoader()" title="Запустить уже установленный на ПК ShinyVisuals Loader">
+                <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 <span>Запуск лоадера</span>
               </button>
             </div>
 
-            <div class="text-[11.5px] text-zinc-500 text-center font-mono mt-2">
+            <!-- Helpful tip for Chrome / Edge security prompt -->
+            <div class="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-[11px] text-zinc-400 flex items-start gap-2.5 leading-relaxed mt-1">
+              <span class="text-amber-400 text-sm leading-none shrink-0 mt-0.5">💡</span>
+              <div>
+                Если браузер (Chrome / Edge / Yandex) предупреждает о файле: нажмите три точки <strong>«...»</strong> в списке скачиваний браузера и выберите <strong>«Сохранить всё равно»</strong>, либо скачайте версию в <strong>.ZIP архиве</strong> выше.
+              </div>
+            </div>
+
+            <div class="text-[11.5px] text-zinc-500 text-center font-mono mt-1">
               Версия 26.3.1 • Fabric 1.21.4 • HWID привязка и авто-обновление активны
             </div>
           </div>

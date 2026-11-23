@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 4. Download Feedback Hooks
-  const downloadLinks = document.querySelectorAll('a[href*=".exe"], a[href*=".jar"], a[href*="download"]');
+  const downloadLinks = document.querySelectorAll('a[href*=".exe"], a[href*=".jar"], a[href*=".zip"], a[href*="download"]');
   downloadLinks.forEach(link => {
     link.addEventListener('click', (e) => {
       const href = link.getAttribute('href') || '';
