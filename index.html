@@ -30,8 +30,8 @@
   </script>
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="./style.css?v=10">
-  <link rel="stylesheet" href="./twofactor.css?v=10">
+  <link rel="stylesheet" href="./style.css?v=12">
+  <link rel="stylesheet" href="./twofactor.css?v=12">
 </head>
 <body class="bg-[#08080a] text-[#ededef] font-sans antialiased selection:bg-purple-500/30 selection:text-white">
 
@@ -307,10 +307,21 @@
         </div>
 
         <!-- Tab Buttons -->
-        <div class="flex items-center justify-center gap-2 p-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] max-w-md mx-auto mb-10">
-          <button type="button" class="sv-tab-btn active" data-tab="visuals">Визуал</button>
-          <button type="button" class="sv-tab-btn" data-tab="optimization">Оптимизация</button>
-          <button type="button" class="sv-tab-btn" data-tab="hud">Интерфейс & HUD</button>
+        <div class="flex items-center justify-center mb-10">
+          <div class="sv-tab-container">
+            <button type="button" class="sv-tab-btn active" data-tab="visuals">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              <span>Визуал</span>
+            </button>
+            <button type="button" class="sv-tab-btn" data-tab="optimization">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span>Оптимизация</span>
+            </button>
+            <button type="button" class="sv-tab-btn" data-tab="hud">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+              <span>Интерфейс & HUD</span>
+            </button>
+          </div>
         </div>
 
         <!-- Tab Content Panes -->

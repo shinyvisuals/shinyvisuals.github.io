@@ -222,26 +222,68 @@ body {
 }
 
 /* Module Tabs & Cards */
+.sv-tab-container {
+  background: rgba(13, 9, 22, 0.85);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 24px rgba(168, 85, 247, 0.12);
+  border-radius: 18px;
+  padding: 6px;
+  display: inline-flex;
+  gap: 6px;
+  transition: all 0.3s ease;
+}
+
 .sv-tab-btn {
-  padding: 8px 18px;
-  border-radius: 8px;
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 20px;
+  border-radius: 12px;
+  font-size: 13.5px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: #94a3b8;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sv-tab-btn svg {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.2s ease, color 0.2s ease;
+  color: #a855f7;
+  opacity: 0.65;
 }
 
 .sv-tab-btn:hover {
-  color: var(--text-primary);
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sv-tab-btn:hover svg {
+  opacity: 1;
+  transform: scale(1.1);
+  color: #c084fc;
 }
 
 .sv-tab-btn.active {
-  background: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.28) 0%, rgba(126, 34, 206, 0.4) 100%);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(192, 132, 252, 0.5);
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  text-shadow: 0 0 12px rgba(192, 132, 252, 0.6);
+}
+
+.sv-tab-btn.active svg {
+  color: #ffffff;
+  opacity: 1;
+  filter: drop-shadow(0 0 8px rgba(192, 132, 252, 0.75));
 }
 
 .sv-module-card {
