@@ -1,10 +1,10 @@
 {
-  "version": "26.3.1",
+  "version": "26.3",
   "releaseDate": "2026-11-23",
   "channel": "release",
   "minecraft": "26.3",
   "client": {
-    "version": "26.3.1",
+    "version": "26.3",
     "jarName": "shinyvisuals-26.3.jar",
     "downloadUrl": "https://shinyvisuals.github.io/downloads/shinyvisuals-26.3.jar",
     "sizeBytes": 82401341,
@@ -15,7 +15,7 @@
     }
   },
   "launcher": {
-    "version": "26.3.1",
+    "version": "26.3",
     "downloadUrl": "https://shinyvisuals.github.io/downloads/ShinyVisualsLoader-Setup.exe"
   },
   "changelog": [
