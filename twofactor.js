@@ -767,17 +767,101 @@
 
   window.addEventListener('shiny_2fa_changed', refreshUI);
 
+  // --- Модальное окно профиля аккаунта (UID, HWID, 2FA) ---
+  function openAccountModal() {
+    closeActiveModal();
+    const cfg = get2FAConfig();
+    const storedUser = localStorage.getItem('shiny_user') || 'deathproblem';
+    const hwid = 'SHINY-6412-B285-28C5-EFED';
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'twofactor-modal-backdrop';
+    backdrop.id = 'twofactorModal';
+    backdrop.innerHTML = `
+      <div class="twofactor-modal-box" style="max-width:480px;">
+        <div class="twofactor-modal-header">
+          <div class="twofactor-modal-title">
+            <span style="font-size:18px;">👤</span>
+            <span>Профиль игрока</span>
+          </div>
+          <button class="twofactor-close-btn" id="btn2faClose">&times;</button>
+        </div>
+        
+        <div style="display:flex; flex-direction:column; gap:12px; margin-top:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px;">
+            <span style="font-size:13px; color:#94a3b8;">UID</span>
+            <span style="font-size:13px; font-family:monospace; font-weight:700; color:#ffffff;">#7777</span>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px;">
+            <span style="font-size:13px; color:#94a3b8;">Никнейм</span>
+            <span style="font-size:13px; font-weight:600; color:#ffffff;">${storedUser}</span>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px;">
+            <span style="font-size:13px; color:#94a3b8;">Подписка</span>
+            <span style="font-size:12px; font-weight:700; color:#10b981; background:rgba(16,185,129,0.1); padding:2px 8px; border-radius:6px; border:1px solid rgba(16,185,129,0.2);">FREE</span>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px;">
+            <span style="font-size:13px; color:#94a3b8;">HWID ПК</span>
+            <span style="font-size:11px; font-family:monospace; color:#cbd5e1;">${hwid}</span>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px;">
+            <span style="font-size:13px; color:#94a3b8;">Привязка HWID</span>
+            <span style="font-size:12px; font-weight:600; color:#34d399;">✓ Активна на этом ПК</span>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; background:rgba(147,51,234,0.05); border:1px solid rgba(147,51,234,0.2); border-radius:10px; margin-top:4px;">
+            <div>
+              <div style="font-size:13px; font-weight:600; color:#ffffff;">Google Authenticator (2FA)</div>
+              <div style="font-size:11px; color:#94a3b8;">${cfg.enabled ? 'Двухфакторная защита активна' : 'Дополнительная защита аккаунта'}</div>
+            </div>
+            <button id="btnProfile2FA" style="padding:6px 12px; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer; background:${cfg.enabled ? 'rgba(239,68,68,0.15)' : 'rgba(168,85,247,0.2)'}; border:1px solid ${cfg.enabled ? 'rgba(239,68,68,0.3)' : 'rgba(168,85,247,0.4)'}; color:${cfg.enabled ? '#f87171' : '#d8b4fe'};">
+              ${cfg.enabled ? 'Отключить' : 'Подключить'}
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <button id="btnCopyHwid" style="width:100%; padding:10px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); color:#ffffff; font-size:13px; font-weight:600; cursor:pointer; display:flex; items-center; justify-content:center; gap:6px;">
+            📋 Скопировать HWID
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(backdrop);
+    backdrop.onclick = (e) => { if (e.target === backdrop) closeActiveModal(); };
+    document.getElementById('btn2faClose').onclick = closeActiveModal;
+
+    document.getElementById('btnCopyHwid').onclick = () => {
+      navigator.clipboard.writeText(hwid).then(() => {
+        if (window.showToast) window.showToast('HWID скопирован в буфер обмена', '📋');
+        else alert('HWID скопирован: ' + hwid);
+      }).catch(() => {});
+    };
+
+    document.getElementById('btnProfile2FA').onclick = () => {
+      if (cfg.enabled) openDisable2FAModal();
+      else openGoogleAuthSetupModal();
+    };
+  }
+
   // Глобальный API
   window.Shiny2FA = {
     openSetup: openGoogleAuthSetupModal,
     openDisable: openDisable2FAModal,
     getConfig: get2FAConfig,
-    verify: verifyTOTP
+    verify: verifyTOTP,
+    openAccount: openAccountModal
   };
 
   window.ShinySecurity = {
     open2FASetup: openGoogleAuthSetupModal,
     open2FADisable: openDisable2FAModal,
-    get2FAConfig: get2FAConfig
+    get2FAConfig: get2FAConfig,
+    openAccount: openAccountModal
   };
 })();

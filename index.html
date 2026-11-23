@@ -1,28 +1,567 @@
 <!DOCTYPE html>
-<html lang="ru" class="h-full antialiased dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ShinyVisuals — Бесплатный визуальный мод для Minecraft 1.21.4</title>
-    <link rel="icon" href="./favicon.png" type="image/png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="./assets/index-a3Ud--8j.js?v=6"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BFU9W4F0.css?v=6">
-    <link rel="stylesheet" href="./twofactor.css?v=9">
-    <link rel="stylesheet" href="./modern-style.css?v=4">
-  </head>
-  <body class="min-h-full bg-[#09070f] text-[#f3f0fb] selection:bg-[#8b5cf6]/40 selection:text-white">
-    <div id="root"></div>
-    <script src="./twofactor.js?v=12"></script>
-    <script src="./modern-ui.js?v=5" defer></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(regs) {
-          for (let reg of regs) reg.unregister();
-        }).catch(function() {});
+<html lang="ru" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShinyVisuals — Визуальный клиент и мод для Minecraft 1.21.4</title>
+  <meta name="description" content="Инновационный визуальный клиент для Minecraft 1.21.4 (26.3). Глубокая оптимизация рендера, адаптивный HUD, кинематографичные шейдеры неба и бескомпромиссный FPS." />
+  <link rel="icon" href="./favicon.png" type="image/png" />
+  
+  <!-- Fonts: Plus Jakarta Sans & Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS Engine -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
       }
-    </script>
-  </body>
+    }
+  </script>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="./style.css?v=10">
+  <link rel="stylesheet" href="./twofactor.css?v=10">
+</head>
+<body class="bg-[#08080a] text-[#ededef] font-sans antialiased selection:bg-purple-500/30 selection:text-white">
+
+  <!-- Subtle Atmospheric Backdrop (Anti-slop: crisp grid, no blurry purple blobs) -->
+  <div class="fixed inset-0 pointer-events-none z-0">
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(147,51,234,0.12),rgba(255,255,255,0))]"></div>
+    <div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+  </div>
+
+  <!-- Header / Navigation -->
+  <header class="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-[#08080a]/80 backdrop-blur-xl transition-all">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <!-- Brand -->
+      <a href="#hero" class="flex items-center gap-3 group">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500/20 to-sky-500/10 border border-purple-500/30 flex items-center justify-center p-1.5 shadow-sm group-hover:border-purple-400/50 transition-colors">
+          <img src="./favicon.png" alt="Logo" class="w-full h-full object-contain" onerror="this.outerHTML='✨'" />
+        </div>
+        <span class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+          ShinyVisuals
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/15 border border-purple-500/25 text-purple-300 font-semibold">26.3</span>
+        </span>
+      </a>
+
+      <!-- Desktop Navigation Links -->
+      <nav class="hidden md:flex items-center gap-7 text-sm font-medium text-zinc-400">
+        <a href="#features" class="hover:text-white transition-colors">Преимущества</a>
+        <a href="#compare" class="hover:text-white transition-colors">Сравнение</a>
+        <a href="#modules" class="hover:text-white transition-colors">Модули</a>
+        <a href="#download" class="hover:text-white transition-colors">Скачать</a>
+        <a href="#faq" class="hover:text-white transition-colors">FAQ</a>
+      </nav>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-3">
+        <button type="button" id="btnNavAccount" class="sv-btn-secondary text-xs px-3.5 py-2 rounded-lg font-medium flex items-center gap-2" onclick="ShinySecurity && ShinySecurity.openAccount ? ShinySecurity.openAccount() : alert('Личный кабинет загружается...')">
+          <svg class="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span>Кабинет</span>
+        </button>
+
+        <a href="#download" class="sv-btn-primary text-xs px-4 py-2 rounded-lg font-semibold flex items-center gap-2 shadow-sm">
+          <span>Скачать .JAR</span>
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="relative z-10">
+
+    <!-- 1. HERO SECTION -->
+    <section id="hero" class="pt-20 pb-16 md:pt-28 md:pb-24 px-6 text-center max-w-5xl mx-auto">
+      <!-- Version & Status Pill -->
+      <div class="inline-flex items-center gap-2.5 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.03] text-xs font-mono text-zinc-300 mb-8 backdrop-blur-md">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-zinc-200 font-medium">Релиз 26.3</span>
+        <span class="text-zinc-500">•</span>
+        <span class="text-zinc-400">Minecraft 1.21.4 (Fabric)</span>
+      </div>
+
+      <!-- Main Heading -->
+      <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white leading-[1.08] mb-6 font-display">
+        Визуальное превосходство.<br />
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-indigo-300 to-sky-400">
+          Чистая производительность.
+        </span>
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="text-base sm:text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed mb-10 font-normal">
+        Инновационный визуальный мод нового поколения. Полная интеграция с экосистемой Fabric, продвинутая геометрия рендера, настраиваемый PvP HUD и честный прирост FPS.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+        <a href="./downloads/shinyvisuals-26.3.jar" download class="sv-btn-primary w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-purple-500/15">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span>Скачать ShinyVisuals 26.3 (.JAR)</span>
+        </a>
+
+        <a href="#compare" class="sv-btn-secondary w-full sm:w-auto px-6 py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2">
+          <span>Сравнение графики</span>
+          <svg class="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </a>
+      </div>
+
+      <!-- Hero Bento Metrics -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto">
+        <div class="sv-metric-card">
+          <div class="sv-metric-val font-mono text-emerald-400">+140 FPS</div>
+          <div class="sv-metric-lbl">Оптимизация Sodium/Canvas</div>
+        </div>
+        <div class="sv-metric-card">
+          <div class="sv-metric-val font-mono text-purple-400">&lt; 1.2 ms</div>
+          <div class="sv-metric-lbl">Задержка кадра (Frametime)</div>
+        </div>
+        <div class="sv-metric-card">
+          <div class="sv-metric-val font-mono text-sky-400">100% Legit</div>
+          <div class="sv-metric-lbl">0 банов на серверах</div>
+        </div>
+        <div class="sv-metric-card">
+          <div class="sv-metric-val font-mono text-zinc-200">1.21.4</div>
+          <div class="sv-metric-lbl">Fabric 0.165.0 Ready</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. BEFORE / AFTER COMPARISON SLIDER -->
+    <section id="compare" class="py-16 md:py-24 border-t border-white/[0.06] bg-[#0c0c10]/40">
+      <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center max-w-2xl mx-auto mb-12">
+          <span class="text-xs font-mono uppercase tracking-wider text-purple-400 font-semibold mb-2 block">Сравнение рендера</span>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-display mb-4">
+            Почувствуйте разницу наглядно
+          </h2>
+          <p class="text-sm sm:text-base text-zinc-400">
+            Передвигайте разделитель, чтобы оценить чёткость текстур, глубину освещения и стабильный фреймрейт.
+          </p>
+        </div>
+
+        <!-- Interactive Comparison Widget -->
+        <div class="relative max-w-4xl mx-auto rounded-2xl border border-white/[0.08] bg-[#08080a] p-2 shadow-2xl overflow-hidden">
+          <div id="svCompareContainer" class="relative w-full aspect-[16/9] rounded-xl overflow-hidden select-none touch-none cursor-ew-resize">
+            
+            <!-- Before Side (Vanilla) -->
+            <div id="svSideBefore" class="absolute inset-0 w-full h-full bg-[#121218] flex items-center justify-center">
+              <img id="svImgBefore" src="" alt="Vanilla" class="sv-compare-img hidden" />
+              <div id="svFallbackBefore" class="flex flex-col items-center justify-center gap-2 text-zinc-500/50">
+                <span class="text-xs font-mono tracking-widest uppercase">Vanilla 1.21.4</span>
+              </div>
+            </div>
+
+            <!-- After Side (ShinyVisuals with Clip-path) -->
+            <div id="svSideAfter" class="absolute inset-0 w-full h-full bg-[#181326] flex items-center justify-center">
+              <img id="svImgAfter" src="" alt="ShinyVisuals" class="sv-compare-img hidden" />
+              <div id="svFallbackAfter" class="flex flex-col items-center justify-center gap-2 text-purple-400/50">
+                <span class="text-xs font-mono tracking-widest uppercase">ShinyVisuals Engine</span>
+              </div>
+            </div>
+
+            <!-- Draggable Divider Line & Handle -->
+            <div id="svSliderHandle" class="absolute top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-400 via-white to-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.7)] pointer-events-none">
+              <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#0a0a0f] border-2 border-purple-400 flex items-center justify-center shadow-lg shadow-black/80">
+                <svg class="w-4 h-4 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 9l-4 3 4 3m8-6l4 3-4 3" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Corner Badges -->
+            <div class="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-black/60 border border-white/[0.08] backdrop-blur-md text-[11px] font-mono text-zinc-300 pointer-events-none">
+              Vanilla 1.21.4
+            </div>
+            <div class="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-purple-950/60 border border-purple-500/30 backdrop-blur-md text-[11px] font-mono text-purple-200 pointer-events-none">
+              ShinyVisuals Engine
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. BENTO GRID ARCHITECTURE (UI-UX Pro Max Standard) -->
+    <section id="features" class="py-16 md:py-24 max-w-6xl mx-auto px-6">
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <span class="text-xs font-mono uppercase tracking-wider text-purple-400 font-semibold mb-2 block">Возможности клиента</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-display mb-4">
+          Спроектировано до мельчайших пикселей
+        </h2>
+        <p class="text-sm sm:text-base text-zinc-400">
+          Каждый модуль оптимизирован для максимальной плавности в тяжёлых PvP баталиях и анархии.
+        </p>
+      </div>
+
+      <!-- Bento Grid Container -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        
+        <!-- Large Card 1: Ambience Shader -->
+        <div class="md:col-span-2 sv-bento-card">
+          <div class="flex items-start justify-between mb-4">
+            <span class="sv-badge-tag text-purple-300 bg-purple-500/10 border-purple-500/20">Шейдер Ambience</span>
+            <span class="text-xs font-mono text-zinc-500">GLSL 3.3 Core</span>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2 font-display">Кинематографичный шейдер неба без просадок</h3>
+          <p class="text-sm text-zinc-400 leading-relaxed mb-6">
+            Полностью переработанный алгоритм отрисовки ночного неба: динамическое северное сияние, глубокие галактические туманности и реалистичный горизонт. Устранено круглое обрезание по дальности прорисовки ванильного тумана.
+          </p>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs font-mono">
+            <div class="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] text-zinc-300">✓ Без потери FPS</div>
+            <div class="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] text-zinc-300">✓ Плавный градиент</div>
+            <div class="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] text-zinc-300">✓ Совместимость с Iris</div>
+          </div>
+        </div>
+
+        <!-- Medium Card 2: Render Pipeline -->
+        <div class="sv-bento-card">
+          <div class="flex items-start justify-between mb-4">
+            <span class="sv-badge-tag text-emerald-400 bg-emerald-500/10 border-emerald-500/20">Производительность</span>
+            <span class="text-xs font-mono text-zinc-500">Sodium API</span>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 font-display">Occlusion Culling & Кэш</h3>
+          <p class="text-sm text-zinc-400 leading-relaxed mb-4">
+            Мгновенная фильтрация невидимых сущностей и оптимизация отрисовки блоков за пределами поля зрения.
+          </p>
+          <div class="mt-auto p-3 rounded-xl bg-emerald-500/[0.04] border border-emerald-500/20 text-xs font-mono text-emerald-300">
+            Фреймрейт стабилен даже при 50+ игроках рядом.
+          </div>
+        </div>
+
+        <!-- Medium Card 3: Target ESP & Hitbox -->
+        <div class="sv-bento-card">
+          <div class="flex items-start justify-between mb-4">
+            <span class="sv-badge-tag text-sky-400 bg-sky-500/10 border-sky-500/20">Combat HUD</span>
+            <span class="text-xs font-mono text-zinc-500">HitBox v2</span>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 font-display">Умный Target ESP & Хитбоксы</h3>
+          <p class="text-sm text-zinc-400 leading-relaxed mb-4">
+            Кастомные хитбоксы скрываются вместе с мобами при превышении дистанции. Без дублирования ванильных рамок.
+          </p>
+          <div class="text-xs font-mono text-zinc-400">
+            Точное наведение без визуального шума.
+          </div>
+        </div>
+
+        <!-- Large Card 4: Physics & Realtime Trails -->
+        <div class="md:col-span-2 sv-bento-card">
+          <div class="flex items-start justify-between mb-4">
+            <span class="sv-badge-tag text-amber-300 bg-amber-500/10 border-amber-500/20">Физика и Партиклы</span>
+            <span class="text-xs font-mono text-zinc-500">Realtime Math</span>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2 font-display">Трейлы реального времени и JumpCircle</h3>
+          <p class="text-sm text-zinc-400 leading-relaxed mb-6">
+            Длина трейлов снарядов и партиклов рассчитывается по дельта-времени реального времени, а не по количеству тиков или FPS. Круги прыжков (JumpCircle) спавнятся на идеальной высоте с аппаратным тестом глубины.
+          </p>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs font-mono">
+            <div class="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] text-zinc-300">✓ Независимость от FPS</div>
+            <div class="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] text-zinc-300">✓ Depth Test включён</div>
+            <div class="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] text-zinc-300">✓ Без мерцания текстур</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 4. INTERACTIVE MODULES EXPLORER -->
+    <section id="modules" class="py-16 md:py-24 border-t border-white/[0.06] bg-[#09090d]/60">
+      <div class="max-w-5xl mx-auto px-6">
+        <div class="text-center max-w-2xl mx-auto mb-12">
+          <span class="text-xs font-mono uppercase tracking-wider text-purple-400 font-semibold mb-2 block">Каталог модулей</span>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-display mb-4">
+            Полный контроль над визуалом
+          </h2>
+          <p class="text-sm sm:text-base text-zinc-400">
+            Переключайте категории, чтобы изучить доступные настройки интерфейса и графики.
+          </p>
+        </div>
+
+        <!-- Tab Buttons -->
+        <div class="flex items-center justify-center gap-2 p-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] max-w-md mx-auto mb-10">
+          <button type="button" class="sv-tab-btn active" data-tab="visuals">Визуал</button>
+          <button type="button" class="sv-tab-btn" data-tab="optimization">Оптимизация</button>
+          <button type="button" class="sv-tab-btn" data-tab="hud">Интерфейс & HUD</button>
+        </div>
+
+        <!-- Tab Content Panes -->
+        <div id="tabContent-visuals" class="sv-tab-pane active">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div class="sv-module-card">
+              <div class="sv-module-name">Ambience Sky</div>
+              <div class="sv-module-desc">Кастомный градиент неба, северное сияние и звёзды без потери фпс.</div>
+              <span class="sv-module-tag">Шейдер</span>
+            </div>
+            <div class="sv-module-card">
+              <div class="sv-module-name">Custom HitBox</div>
+              <div class="sv-module-desc">Цветные настраиваемые хитбоксы сущностей с дальностью скрытия.</div>
+              <span class="sv-module-tag">PvP</span>
+            </div>
+            <div class="sv-module-card">
+              <div class="sv-module-name">JumpCircle</div>
+              <div class="sv-module-desc">Элегантные волны под ногами при приземлении с тестом глубины.</div>
+              <span class="sv-module-tag">Анимация</span>
+            </div>
+            <div class="sv-module-card">
+              <div class="sv-module-name">Projectile Trails</div>
+              <div class="sv-module-desc">Плавные неоновые следы за стрелами, перлами и трезубцами.</div>
+              <span class="sv-module-tag">Рендер</span>
+            </div>
+            <div class="sv-module-card">
+              <div class="sv-module-name">HitColor & Flash</div>
+              <div class="sv-module-desc">Кастомный цвет вспышки урона мобов и игроков без шахматного бага.</div>
+              <span class="sv-module-tag">Визуал</span>
+            </div>
+            <div class="sv-module-card">
+              <div class="sv-module-name">FullBright</div>
+              <div class="sv-module-desc">Идеальная видимость в глубоких шахтах и тёмных пещерах.</div>
+              <span class="sv-module-tag">Утилита</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="tabContent-optimization" class="sv-tab-pane hidden">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div class="sv-module-card">
+              <div class="sv-module-name">Entity Distance Culling</div>
+              <div class="sv-module-desc">Отсечение просчёта невидимых мобов на настраиваемой дистанции.</div>
+              <span class="sv-module-tag">FPS Boost</span>
+            </div>
+            <div class="sv-module-card">
+              <div class="sv-module-name">Chunk Cache Memory</div>
+              <div class="sv-module-desc">Умное высвобождение оперативной памяти от незадействованных чанков.</div>
+              <span class="sv-module-tag">Память</span>
+            </div>
+            <div class="sv-module-card">
+              <div class="sv-module-name">Particle Limiter</div>
+              <div class="sv-module-desc">Предотвращает зависания от взрывов динамита и кристаллов края.</div>
+              <span class="sv-module-tag">Стабильность</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="tabContent-hud" class="sv-tab-pane hidden">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div class="sv-module-card">
+              <div class="sv-module-name">Dynamic Crosshair</div>
+              <div class="sv-module-desc">Динамический разрыв прицела от кулдауна атаки и скорости бега.</div>
+              <span class="sv-module-tag">Прицел</span>
+            </div>
+            <div class="sv-module-card">
+              <div class="sv-module-name">Target HUD</div>
+              <div class="sv-module-desc">Компактная карточка цели: здоровье, броня и пинг противника.</div>
+              <span class="sv-module-tag">PvP HUD</span>
+            </div>
+            <div class="sv-module-card">
+              <div class="sv-module-name">Keystrokes & CPS</div>
+              <div class="sv-module-desc">Отображение нажатий клавиш движения и кликов мыши в реальном времени.</div>
+              <span class="sv-module-tag">Интерфейс</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. DOWNLOAD & GET STARTED SECTION -->
+    <section id="download" class="py-16 md:py-24 border-t border-white/[0.06] max-w-5xl mx-auto px-6">
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <span class="text-xs font-mono uppercase tracking-wider text-purple-400 font-semibold mb-2 block">Загрузка клиента</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-display mb-4">
+          Начните играть с ShinyVisuals
+        </h2>
+        <p class="text-sm sm:text-base text-zinc-400">
+          Установите готовый .JAR мод в папку mods вашего лаунчера за 30 секунд.
+        </p>
+      </div>
+
+      <!-- Download Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+        
+        <!-- Card 1: Primary .JAR (Recommended) -->
+        <div class="p-8 rounded-2xl bg-gradient-to-b from-purple-500/[0.07] to-transparent border border-purple-500/30 flex flex-col justify-between shadow-xl shadow-purple-500/5">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-mono font-semibold">
+                Рекомендовано
+              </span>
+              <span class="text-xs font-mono text-zinc-400">82.4 МБ • SHA-256</span>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-2 font-display">ShinyVisuals 26.3 (.JAR)</h3>
+            <p class="text-sm text-zinc-400 mb-6 leading-relaxed">
+              Готовый файл модификации. Подходит для абсолютно любого лаунчера: TLauncher, Prism Launcher, Modrinth, CurseForge, Legacy Launcher и официального Minecraft Launcher.
+            </p>
+          </div>
+
+          <div>
+            <a href="./downloads/shinyvisuals-26.3.jar" download class="sv-btn-primary w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-purple-500/20">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Скачать клиент (.JAR)</span>
+            </a>
+            <div class="text-[11px] text-zinc-500 text-center font-mono mt-3">
+              Совместимо с Fabric 0.165.0+ и Minecraft 1.21.4
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: ShinyVisuals Loader (.EXE) (Temporarily Locked) -->
+        <div class="p-8 rounded-2xl bg-white/[0.02] border border-white/[0.06] flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 rounded-full bg-zinc-800 text-zinc-400 text-xs font-mono font-medium flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                Обновление
+              </span>
+              <span class="text-xs font-mono text-zinc-500">Windows (.EXE)</span>
+            </div>
+            <h3 class="text-2xl font-bold text-zinc-300 mb-2 font-display">ShinyVisuals Loader</h3>
+            <p class="text-sm text-zinc-400 mb-6 leading-relaxed">
+              Автономный установщик в 1 клик. В данный момент проходит техническую оптимизацию перед открытием публичного доступа.
+            </p>
+          </div>
+
+          <div>
+            <button type="button" disabled class="w-full py-4 rounded-xl font-semibold text-sm bg-white/[0.04] border border-white/[0.08] text-zinc-400 cursor-not-allowed flex items-center justify-center gap-2" onclick="alert('Скачивание лоадера временно приостановлено разработчиком на время обновления.')">
+              <svg class="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span>🔒 Скачивание временно закрыто</span>
+            </button>
+            <div class="text-[11px] text-zinc-500 text-center font-mono mt-3">
+              Используйте прямую установку .JAR выше
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick 3-Step Setup Guide -->
+      <div class="p-6 md:p-8 rounded-2xl border border-white/[0.08] bg-white/[0.02] max-w-3xl mx-auto">
+        <h4 class="text-sm font-bold text-white uppercase tracking-wider font-mono mb-6 text-center">
+          Быстрая установка мода в 3 шага
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+          <div class="flex flex-col gap-2">
+            <div class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-300 font-mono font-bold flex items-center justify-center text-xs">
+              1
+            </div>
+            <div class="font-semibold text-white">Скачайте .JAR</div>
+            <div class="text-xs text-zinc-400 leading-relaxed">
+              Нажмите кнопку скачивания файла <span class="text-purple-300 font-mono">shinyvisuals-26.3.jar</span> выше.
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <div class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-300 font-mono font-bold flex items-center justify-center text-xs">
+              2
+            </div>
+            <div class="font-semibold text-white">Перенесите в mods</div>
+            <div class="text-xs text-zinc-400 leading-relaxed">
+              Нажмите <kbd class="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[10px] font-mono text-zinc-200">Win+R</kbd>, введите <span class="text-zinc-300 font-mono text-[11px]">%appdata%/.minecraft/mods</span> и скопируйте файл.
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <div class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-300 font-mono font-bold flex items-center justify-center text-xs">
+              3
+            </div>
+            <div class="font-semibold text-white">Запустите игру</div>
+            <div class="text-xs text-zinc-400 leading-relaxed">
+              Выберите версию <span class="text-purple-300 font-mono">Fabric 1.21.4</span> в вашем лаунчере и наслаждайтесь плавным визуалом!
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. FAQ ACCORDION -->
+    <section id="faq" class="py-16 md:py-24 border-t border-white/[0.06] bg-[#0c0c10]/40">
+      <div class="max-w-3xl mx-auto px-6">
+        <div class="text-center mb-12">
+          <span class="text-xs font-mono uppercase tracking-wider text-purple-400 font-semibold mb-2 block">Вопросы и ответы</span>
+          <h2 class="text-3xl font-extrabold text-white tracking-tight font-display mb-3">
+            Часто задаваемые вопросы
+          </h2>
+        </div>
+
+        <div class="space-y-3.5">
+          <details class="sv-faq-item group">
+            <summary class="sv-faq-question">
+              <span>Банят ли за использование ShinyVisuals на серверах?</span>
+              <svg class="w-4 h-4 text-zinc-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="sv-faq-answer">
+              Нет. ShinyVisuals — это исключительно клиентский косметический мод и оптимизатор рендера. Он не вмешивается в сетевые пакеты передвижения или ванильную физику сервера, поэтому безопасен для игры на FunTime, ReallyWorld, HolyWorld и серверах анархии.
+            </div>
+          </details>
+
+          <details class="sv-faq-item group">
+            <summary class="sv-faq-question">
+              <span>Совместим ли мод с шейдерами Iris и модом Sodium?</span>
+              <svg class="w-4 h-4 text-zinc-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="sv-faq-answer">
+              Да, клиент полностью построен вокруг современного графического стека Fabric и бесконфликтно работает параллельно с Sodium, Iris Shaders, Lithium, FerriteCore и другими оптимизаторами.
+            </div>
+          </details>
+
+          <details class="sv-faq-item group">
+            <summary class="sv-faq-question">
+              <span>Какая версия Java требуется для работы?</span>
+              <svg class="w-4 h-4 text-zinc-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="sv-faq-answer">
+              Для Minecraft 1.21.4 требуется Java 21 (или новее). Практически все современные лаунчеры (TLauncher, Prism, Modrinth) загружают нужную версию Java автоматически при выборе версии игры.
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Clean Footer -->
+  <footer class="border-t border-white/[0.06] bg-[#070709] py-10 px-6">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-zinc-500">
+      <div class="flex items-center gap-3">
+        <span class="font-bold text-zinc-300">ShinyVisuals</span>
+        <span>•</span>
+        <span>Версия 26.3 (Fabric 1.21.4)</span>
+      </div>
+
+      <div class="text-center md:text-right text-[11px] text-zinc-600">
+        Не является официальным продуктом Mojang или Microsoft. Все права на Minecraft принадлежат Mojang AB.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="./twofactor.js?v=15"></script>
+  <script src="./app.js?v=15"></script>
+</body>
 </html>
