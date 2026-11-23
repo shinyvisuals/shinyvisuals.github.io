@@ -828,20 +828,7 @@
             <span style="font-size:12px; font-weight:600; color:#34d399;">✓ Активна на этом ПК</span>
           </div>
 
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(56,189,248,0.05); border:1px solid rgba(56,189,248,0.22); border-radius:10px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:16px;">⚡</span>
-              <div>
-                <div style="font-size:12.5px; font-weight:600; color:#ffffff;">Antigravity AI Co-Pilot</div>
-                <div style="font-size:10.5px; color:#38bdf8;">Интеллектуальная оптимизация и защита</div>
-              </div>
-            </div>
-            <button id="btnProfileAntigravity" type="button" style="padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.35); color:#38bdf8;">
-              ТЕРМИНАЛ 🚀
-            </button>
-          </div>
-
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; background:rgba(147,51,234,0.05); border:1px solid rgba(147,51,234,0.2); border-radius:10px; margin-top:2px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; background:rgba(147,51,234,0.05); border:1px solid rgba(147,51,234,0.2); border-radius:10px; margin-top:4px;">
             <div>
               <div style="font-size:13px; font-weight:600; color:#ffffff;">Google Authenticator (2FA)</div>
               <div style="font-size:11px; color:#94a3b8;">${cfg.enabled ? 'Двухфакторная защита активна' : 'Дополнительная защита аккаунта'}</div>
@@ -875,22 +862,12 @@
       if (cfg.enabled) openDisable2FAModal(storedUser);
       else openGoogleAuthSetupModal(storedUser);
     };
-
-    const btnAnt = document.getElementById('btnProfileAntigravity');
-    if (btnAnt) {
-      btnAnt.onclick = () => {
-        closeActiveModal();
-        if (window.openAntigravityHUD) window.openAntigravityHUD();
-      };
-    }
   }
 
   // Закрытие модальных окон по Escape
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeActiveModal();
-      const hud = document.getElementById('antigravityModal');
-      if (hud) hud.remove();
     }
   });
 
