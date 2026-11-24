@@ -3,9 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>ShinyVisuals 26.3 — Визуальный клиент и мод для Minecraft 26.3</title>
   <meta name="description" content="Инновационный визуальный клиент для Minecraft 26.3. Глубокая оптимизация рендера, адаптивный HUD, кинематографичные шейдеры неба и бескомпромиссный FPS." />
   <link rel="icon" href="./favicon.png" type="image/png" />
+  
+  <script>
+    // Принудительное удаление устаревших ServiceWorker и очистка кэша
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (let reg of registrations) reg.unregister();
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (let name of names) caches.delete(name);
+      });
+    }
+  </script>
   
   <!-- Fonts: Plus Jakarta Sans & Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,8 +47,8 @@
   </script>
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="./style.css?v=12">
-  <link rel="stylesheet" href="./twofactor.css?v=12">
+  <link rel="stylesheet" href="./style.css?v=26.3.5">
+  <link rel="stylesheet" href="./twofactor.css?v=26.3.5">
 </head>
 <body class="bg-[#08080a] text-[#ededef] font-sans antialiased selection:bg-purple-500/30 selection:text-white">
 
@@ -548,7 +565,7 @@
   </footer>
 
   <!-- Scripts -->
-  <script src="./twofactor.js?v=16"></script>
-  <script src="./app.js?v=16"></script>
+  <script src="./twofactor.js?v=26.3.5"></script>
+  <script src="./app.js?v=26.3.5"></script>
 </body>
 </html>
