@@ -723,6 +723,20 @@
     const cfg = get2FAConfig(storedUser);
     const hwid = 'SHINY-6412-B285-28C5-EFED';
 
+    const isOwner = storedUser.toLowerCase() === 'deathproblem' || storedUser.toLowerCase() === 'admin';
+    const userUid = isOwner ? '#1' : '#' + (cfg.uid || '1850');
+    const subBadge = isOwner
+      ? `<span style="font-size:12px; font-weight:800; color:#fbbf24; background:rgba(251,191,36,0.15); padding:3px 10px; border-radius:6px; border:1px solid rgba(251,191,36,0.35); text-shadow:0 0 10px rgba(251,191,36,0.3);">👑 LIFETIME (OWNER)</span>`
+      : `<span style="font-size:12px; font-weight:700; color:#10b981; background:rgba(16,185,129,0.1); padding:2px 8px; border-radius:6px; border:1px solid rgba(16,185,129,0.2);">FREE</span>`;
+
+    const adminBtnHtml = isOwner ? `
+      <div style="margin-top:10px;">
+        <button id="btnOpenOwnerPanel" style="width:100%; padding:12px; border-radius:10px; background:linear-gradient(135deg, rgba(245,158,11,0.25), rgba(168,85,247,0.3)); border:1px solid rgba(245,158,11,0.5); color:#fef08a; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 0 20px rgba(245,158,11,0.25); transition:all 0.2s;">
+          👑 Панель администратора (Owner Panel)
+        </button>
+      </div>
+    ` : '';
+
     const backdrop = document.createElement('div');
     backdrop.className = 'twofactor-modal-backdrop';
     backdrop.id = 'twofactorModal';
@@ -739,7 +753,7 @@
         <div style="display:flex; flex-direction:column; gap:12px; margin-top:8px;">
           <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px;">
             <span style="font-size:13px; color:#94a3b8;">UID</span>
-            <span style="font-size:13px; font-family:monospace; font-weight:700; color:#ffffff;">#7777</span>
+            <span style="font-size:13px; font-family:monospace; font-weight:700; color:#fbbf24; text-shadow:0 0 10px rgba(251,191,36,0.3);">${userUid}</span>
           </div>
 
           <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px;">
@@ -749,7 +763,7 @@
 
           <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px;">
             <span style="font-size:13px; color:#94a3b8;">Подписка</span>
-            <span style="font-size:12px; font-weight:700; color:#10b981; background:rgba(16,185,129,0.1); padding:2px 8px; border-radius:6px; border:1px solid rgba(16,185,129,0.2);">FREE</span>
+            ${subBadge}
           </div>
 
           <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px;">
@@ -774,10 +788,11 @@
         </div>
 
         <div style="margin-top:16px;">
-          <button id="btnCopyHwid" style="width:100%; padding:10px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); color:#ffffff; font-size:13px; font-weight:600; cursor:pointer; display:flex; items-center; justify-content:center; gap:6px;">
+          <button id="btnCopyHwid" style="width:100%; padding:10px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); color:#ffffff; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
             📋 Скопировать HWID
           </button>
         </div>
+        ${adminBtnHtml}
       </div>
     `;
 
@@ -796,6 +811,266 @@
       if (cfg.enabled) openDisable2FAModal(storedUser);
       else openGoogleAuthSetupModal(storedUser);
     };
+
+    const btnAdmin = document.getElementById('btnOpenOwnerPanel');
+    if (btnAdmin) {
+      btnAdmin.onclick = () => {
+        closeActiveModal();
+        openAdminPanelModal();
+      };
+    }
+  }
+
+  // --- 8. Полноценная панель управления владельца (Owner Admin Panel) ---
+  async function openAdminPanelModal() {
+    closeActiveModal();
+    const storedUser = (localStorage.getItem('shiny_user') || detectCurrentUsername() || 'deathproblem').trim();
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'twofactor-modal-backdrop';
+    backdrop.id = 'twofactorModal';
+    backdrop.innerHTML = `
+      <div class="twofactor-modal-box" style="max-width:920px; width:95%; max-height:88vh; padding:24px; border-color:rgba(245,158,11,0.5); box-shadow:0 0 50px rgba(245,158,11,0.25);">
+        <div class="twofactor-modal-header" style="border-bottom:1px solid rgba(245,158,11,0.2); padding-bottom:14px; margin-bottom:16px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg, rgba(245,158,11,0.3), rgba(168,85,247,0.3)); border:1px solid rgba(245,158,11,0.5); display:flex; align-items:center; justify-content:center; font-size:22px;">
+              👑
+            </div>
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <h3 style="font-size:18px; font-weight:800; color:#ffffff; margin:0;">Панель управления владельца</h3>
+                <span style="font-size:10px; font-weight:800; color:#fbbf24; background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.35); padding:2px 7px; border-radius:6px; text-transform:uppercase;">Owner Only</span>
+              </div>
+              <p style="font-size:12px; color:#94a3b8; margin:3px 0 0 0;">Управление базой данных игроков Firebase, сброс HWID и смена паролей в реальном времени</p>
+            </div>
+          </div>
+          <button class="twofactor-close-btn" id="btnAdminClose" style="font-size:24px;">&times;</button>
+        </div>
+
+        <!-- Статистика -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:10px; margin-bottom:14px;">
+          <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); padding:10px 14px; border-radius:10px;">
+            <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; font-family:monospace;">Всего игроков в базе</div>
+            <div id="admStatUsers" style="font-size:20px; font-weight:800; color:#ffffff; font-family:monospace; margin-top:2px;">...</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); padding:10px 14px; border-radius:10px;">
+            <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; font-family:monospace;">Статус облачной базы</div>
+            <div style="font-size:13px; font-weight:700; color:#4ade80; display:flex; align-items:center; gap:6px; margin-top:5px;">
+              <span style="width:7px; height:7px; border-radius:50%; background:#4ade80; display:inline-block;"></span> Firebase RTDB Online
+            </div>
+          </div>
+          <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); padding:10px 14px; border-radius:10px;">
+            <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; font-family:monospace;">Владелец</div>
+            <div style="font-size:14px; font-weight:700; color:#fef08a; margin-top:4px;">${storedUser} (#1)</div>
+          </div>
+        </div>
+
+        <!-- Панель действий и поиск -->
+        <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+          <input id="admSearch" type="text" placeholder="🔍 Поиск по никнейму, UID или email..." style="flex:1; min-width:220px; padding:9px 14px; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; font-size:13px; outline:none;" />
+          <button id="admBtnRefresh" style="padding:9px 14px; border-radius:8px; background:rgba(168,85,247,0.15); border:1px solid rgba(168,85,247,0.3); color:#d8b4fe; font-size:12px; font-weight:600; cursor:pointer;">🔄 Обновить</button>
+          <button id="admBtnAdd" style="padding:9px 14px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); color:#6ee7b7; font-size:12px; font-weight:600; cursor:pointer;">➕ Создать игрока</button>
+        </div>
+
+        <div id="admStatusMsg" style="display:none; padding:8px 12px; border-radius:8px; margin-bottom:10px; font-size:12px; font-weight:600;"></div>
+
+        <!-- Таблица пользователей -->
+        <div style="max-height:48vh; overflow-y:auto; border:1px solid rgba(255,255,255,0.07); border-radius:10px; background:rgba(0,0,0,0.25);">
+          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:12px;">
+            <thead>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.02); color:#94a3b8; font-family:monospace; font-size:11px; text-transform:uppercase;">
+                <th style="padding:10px 14px;">UID</th>
+                <th style="padding:10px 14px;">Никнейм</th>
+                <th style="padding:10px 14px;">Пароль</th>
+                <th style="padding:10px 14px;">Роль</th>
+                <th style="padding:10px 14px;">HWID ПК</th>
+                <th style="padding:10px 14px; text-align:right;">Действия</th>
+              </tr>
+            </thead>
+            <tbody id="admUsersList">
+              <tr><td colspan="6" style="padding:28px; text-align:center; color:#94a3b8;">Загрузка пользователей из Firebase...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(backdrop);
+    backdrop.onclick = (e) => { if (e.target === backdrop) closeActiveModal(); };
+    document.getElementById('btnAdminClose').onclick = closeActiveModal;
+
+    let cachedUsers = [];
+
+    function showStatus(text, isError = false) {
+      const box = document.getElementById('admStatusMsg');
+      if (!box) return;
+      box.style.display = 'block';
+      box.style.background = isError ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)';
+      box.style.border = isError ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(16,185,129,0.3)';
+      box.style.color = isError ? '#fca5a5' : '#86efac';
+      box.textContent = text;
+      setTimeout(() => { if (box) box.style.display = 'none'; }, 4000);
+    }
+
+    async function loadFirebaseData() {
+      const tbody = document.getElementById('admUsersList');
+      const statUsers = document.getElementById('admStatUsers');
+      if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="padding:28px; text-align:center; color:#94a3b8;">Загрузка пользователей из Firebase...</td></tr>`;
+
+      try {
+        const resp = await fetch(`${FIREBASE_DB_URL}/users.json?t=${Date.now()}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        
+        let users = [];
+        if (Array.isArray(data)) {
+          users = data.filter(Boolean);
+        } else if (data && typeof data === 'object') {
+          users = Object.entries(data).map(([k, v]) => ({ ...v, _firebaseKey: k }));
+        }
+
+        cachedUsers = users;
+        if (statUsers) statUsers.textContent = users.length;
+        renderUserTable(users);
+      } catch (err) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="padding:28px; text-align:center; color:#f87171;">Ошибка загрузки базы данных: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderUserTable(users) {
+      const tbody = document.getElementById('admUsersList');
+      if (!tbody) return;
+
+      const q = (document.getElementById('admSearch')?.value || '').toLowerCase().trim();
+      const filtered = users.filter(u => {
+        if (!u) return false;
+        const name = (u.username || '').toLowerCase();
+        const mail = (u.email || '').toLowerCase();
+        const uid = String(u.uuid || u.id || '');
+        return !q || name.includes(q) || mail.includes(q) || uid.includes(q);
+      });
+
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:24px; text-align:center; color:#94a3b8;">Пользователи не найдены</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(u => {
+        const name = u.username || 'Unknown';
+        const isUserOwner = name.toLowerCase() === 'deathproblem' || name.toLowerCase() === 'admin' || (u.role && u.role.toLowerCase() === 'owner');
+        const uidStr = isUserOwner && name.toLowerCase() === 'deathproblem' ? '#1' : '#' + (u.uuid || u.id || '—');
+        const roleBadge = isUserOwner 
+          ? `<span style="font-size:10px; font-weight:800; color:#fbbf24; background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3); padding:2px 7px; border-radius:5px;">OWNER</span>`
+          : `<span style="font-size:10px; font-weight:600; color:#94a3b8; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); padding:2px 7px; border-radius:5px;">PLAYER</span>`;
+        const hwidStr = u.hwid ? `<span style="font-family:monospace; color:#c084fc; font-size:11px;" title="${u.hwid}">${u.hwid.slice(0, 15)}...</span>` : `<span style="color:#64748b; font-size:11px;">Не привязан</span>`;
+        const pwdStr = u.password || (u.passwordHash ? '••••••' : '—');
+        const key = u._firebaseKey || u.id || u.uuid;
+
+        return `
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+            <td style="padding:10px 14px; font-family:monospace; font-weight:700; color:${isUserOwner ? '#fbbf24' : '#fff'};">${uidStr}</td>
+            <td style="padding:10px 14px; font-weight:600; color:#fff;">${name}</td>
+            <td style="padding:10px 14px; font-family:monospace; color:#cbd5e1;">${pwdStr}</td>
+            <td style="padding:10px 14px;">${roleBadge}</td>
+            <td style="padding:10px 14px;">${hwidStr}</td>
+            <td style="padding:10px 14px; text-align:right;">
+              <div style="display:inline-flex; gap:6px;">
+                <button class="adm-btn-hwid" data-user="${name}" data-key="${key}" style="padding:4px 8px; border-radius:6px; background:rgba(168,85,247,0.15); border:1px solid rgba(168,85,247,0.3); color:#d8b4fe; font-size:11px; cursor:pointer;" title="Сбросить привязку HWID">🔄 HWID</button>
+                <button class="adm-btn-pwd" data-user="${name}" data-key="${key}" style="padding:4px 8px; border-radius:6px; background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.3); color:#93c5fd; font-size:11px; cursor:pointer;" title="Сменить пароль">🔑 Пароль</button>
+                <button class="adm-btn-del" data-user="${name}" data-key="${key}" style="padding:4px 8px; border-radius:6px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; font-size:11px; cursor:pointer;" title="Удалить игрока">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Обработчики кнопок таблицы
+      tbody.querySelectorAll('.adm-btn-hwid').forEach(b => {
+        b.onclick = async () => {
+          const uName = b.getAttribute('data-user');
+          const uKey = b.getAttribute('data-key');
+          if (!confirm(`Сбросить HWID для игрока ${uName}? Игрок сможет войти с нового ПК.`)) return;
+          try {
+            await fetch(`${FIREBASE_DB_URL}/hwid/${encodeURIComponent(uName)}.json`, { method: 'DELETE' });
+            if (uKey) await fetch(`${FIREBASE_DB_URL}/users/${uKey}/hwid.json`, { method: 'DELETE' });
+            showStatus(`✓ HWID для ${uName} успешно сброшен!`);
+            loadFirebaseData();
+          } catch(e) {
+            showStatus(`Ошибка сброса HWID: ${e.message}`, true);
+          }
+        };
+      });
+
+      tbody.querySelectorAll('.adm-btn-pwd').forEach(b => {
+        b.onclick = async () => {
+          const uName = b.getAttribute('data-user');
+          const uKey = b.getAttribute('data-key');
+          const newPass = prompt(`Введите новый пароль для игрока ${uName}:`);
+          if (!newPass || newPass.trim().length < 3) return;
+          try {
+            await fetch(`${FIREBASE_DB_URL}/users/${uKey}/password.json`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(newPass.trim())
+            });
+            showStatus(`✓ Пароль для ${uName} изменён на «${newPass.trim()}»!`);
+            loadFirebaseData();
+          } catch(e) {
+            showStatus(`Ошибка смены пароля: ${e.message}`, true);
+          }
+        };
+      });
+
+      tbody.querySelectorAll('.adm-btn-del').forEach(b => {
+        b.onclick = async () => {
+          const uName = b.getAttribute('data-user');
+          const uKey = b.getAttribute('data-key');
+          if (uName.toLowerCase() === 'deathproblem') {
+            alert('Нельзя удалить аккаунт владельца deathproblem!');
+            return;
+          }
+          if (!confirm(`Вы действительно хотите навсегда удалить аккаунт ${uName}?`)) return;
+          try {
+            await fetch(`${FIREBASE_DB_URL}/users/${uKey}.json`, { method: 'DELETE' });
+            showStatus(`✓ Аккаунт ${uName} удалён!`);
+            loadFirebaseData();
+          } catch(e) {
+            showStatus(`Ошибка удаления: ${e.message}`, true);
+          }
+        };
+      });
+    }
+
+    document.getElementById('admSearch').oninput = () => renderUserTable(cachedUsers);
+    document.getElementById('admBtnRefresh').onclick = loadFirebaseData;
+
+    document.getElementById('admBtnAdd').onclick = async () => {
+      const uName = prompt('Введите никнейм нового игрока:');
+      if (!uName || uName.trim().length < 2) return;
+      const uPass = prompt(`Введите пароль для ${uName.trim()}:`) || '1234';
+      try {
+        const newUuid = cachedUsers.reduce((m, u) => Math.max(m, u.uuid || u.id || 0), 0) + 1;
+        const newUser = {
+          id: String(newUuid),
+          uuid: newUuid,
+          username: uName.trim(),
+          password: uPass.trim(),
+          role: 'Player',
+          createdAt: new Date().toISOString()
+        };
+        await fetch(`${FIREBASE_DB_URL}/users/${newUuid}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newUser)
+        });
+        showStatus(`✓ Игрок ${uName.trim()} успешно создан с UID #${newUuid}!`);
+        loadFirebaseData();
+      } catch(e) {
+        showStatus(`Ошибка создания: ${e.message}`, true);
+      }
+    };
+
+    loadFirebaseData();
   }
 
   // Закрытие модальных окон по Escape
@@ -811,13 +1086,15 @@
     openDisable: openDisable2FAModal,
     getConfig: get2FAConfig,
     verify: verifyTOTP,
-    openAccount: openAccountModal
+    openAccount: openAccountModal,
+    openAdmin: openAdminPanelModal
   };
 
   window.ShinySecurity = {
     open2FASetup: openGoogleAuthSetupModal,
     open2FADisable: openDisable2FAModal,
     get2FAConfig: get2FAConfig,
-    openAccount: openAccountModal
+    openAccount: openAccountModal,
+    openAdmin: openAdminPanelModal
   };
 })();
