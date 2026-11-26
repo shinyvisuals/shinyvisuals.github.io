@@ -719,6 +719,10 @@
   // --- Модальное окно профиля аккаунта (UID, HWID, 2FA) ---
   function openAccountModal() {
     closeActiveModal();
+    if (localStorage.getItem('shiny_logged_out') === '1' && !localStorage.getItem('shiny_user')) {
+      openLoginModal();
+      return;
+    }
     const storedUser = (localStorage.getItem('shiny_user') || detectCurrentUsername() || 'deathproblem').trim();
     const cfg = get2FAConfig(storedUser);
     const hwid = 'SHINY-6412-B285-28C5-EFED';
@@ -793,6 +797,11 @@
           </button>
         </div>
         ${adminBtnHtml}
+        <div style="margin-top:10px;">
+          <button id="btnProfileLogout" style="width:100%; padding:11px; border-radius:10px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.35); color:#fca5a5; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.22)'" onmouseout="this.style.background='rgba(239,68,68,0.12)'">
+            🚪 Выйти из аккаунта
+          </button>
+        </div>
       </div>
     `;
 
@@ -819,6 +828,94 @@
         openAdminPanelModal();
       };
     }
+
+    const btnLogout = document.getElementById('btnProfileLogout');
+    if (btnLogout) {
+      btnLogout.onclick = () => {
+        localStorage.removeItem('shiny_user');
+        localStorage.removeItem('shiny_username');
+        localStorage.removeItem('shiny_auth_user');
+        localStorage.removeItem('launcher_username');
+        localStorage.removeItem('username');
+        localStorage.setItem('shiny_logged_out', '1');
+        closeActiveModal();
+        if (window.showToast) window.showToast('🚪 Вы успешно вышли из аккаунта', '👋');
+        else alert('Вы успешно вышли из аккаунта');
+        setTimeout(() => {
+          openLoginModal();
+        }, 120);
+      };
+    }
+  }
+
+  // --- Модальное окно входа / смены аккаунта на сайте ---
+  function openLoginModal() {
+    closeActiveModal();
+    const backdrop = document.createElement('div');
+    backdrop.className = 'twofactor-modal-backdrop';
+    backdrop.id = 'twofactorModal';
+    backdrop.innerHTML = `
+      <div class="twofactor-modal-box" style="max-width:420px; text-align:center;">
+        <div class="twofactor-modal-header">
+          <div class="twofactor-modal-title">
+            <span style="font-size:18px;">🔑</span>
+            <span>Вход в Личный кабинет</span>
+          </div>
+          <button class="twofactor-close-btn" id="btn2faClose">&times;</button>
+        </div>
+        
+        <p style="font-size:13px; color:#94a3b8; margin:8px 0 16px 0; line-height:1.4;">
+          Введите никнейм для входа в профиль ShinyVisuals
+        </p>
+
+        <div style="display:flex; flex-direction:column; gap:12px; text-align:left;">
+          <div>
+            <label style="font-size:12px; color:#cbd5e1; font-weight:600; display:block; margin-bottom:6px;">Никнейм</label>
+            <input id="inputSiteLoginUser" type="text" placeholder="Введите никнейм (например, deathproblem)..." style="width:100%; box-sizing:border-box; padding:12px 14px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.12); color:#fff; font-size:14px; outline:none;" autocomplete="off" />
+          </div>
+
+          <div>
+            <label style="font-size:12px; color:#cbd5e1; font-weight:600; display:block; margin-bottom:6px;">Пароль (опционально)</label>
+            <input id="inputSiteLoginPass" type="password" placeholder="Пароль..." style="width:100%; box-sizing:border-box; padding:12px 14px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.12); color:#fff; font-size:14px; outline:none;" />
+          </div>
+
+          <div style="margin-top:6px;">
+            <button id="btnSubmitSiteLogin" style="width:100%; padding:13px; border-radius:10px; background:linear-gradient(135deg, #a855f7, #6366f1); border:none; color:#ffffff; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 0 20px rgba(168,85,247,0.35); transition:all 0.2s;">
+              Войти в профиль
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(backdrop);
+    backdrop.onclick = (e) => { if (e.target === backdrop) closeActiveModal(); };
+    document.getElementById('btn2faClose').onclick = closeActiveModal;
+
+    const input = document.getElementById('inputSiteLoginUser');
+    if (input) input.focus();
+
+    const doLogin = () => {
+      const u = (input.value || '').trim();
+      if (!u) {
+        input.style.borderColor = '#ef4444';
+        return;
+      }
+      localStorage.setItem('shiny_user', u);
+      localStorage.setItem('shiny_username', u);
+      localStorage.removeItem('shiny_logged_out');
+      closeActiveModal();
+      if (window.showToast) window.showToast(`✓ Вход выполнен под ником ${u}`, '✨');
+      setTimeout(() => {
+        openAccountModal();
+      }, 100);
+    };
+
+    const btnSubmit = document.getElementById('btnSubmitSiteLogin');
+    if (btnSubmit) btnSubmit.onclick = doLogin;
+    if (input) input.onkeydown = (e) => { if (e.key === 'Enter') doLogin(); };
+    const passInput = document.getElementById('inputSiteLoginPass');
+    if (passInput) passInput.onkeydown = (e) => { if (e.key === 'Enter') doLogin(); };
   }
 
   // --- 8. Полноценная панель управления владельца (Owner Admin Panel) ---
@@ -1087,6 +1184,7 @@
     getConfig: get2FAConfig,
     verify: verifyTOTP,
     openAccount: openAccountModal,
+    openLogin: openLoginModal,
     openAdmin: openAdminPanelModal
   };
 
@@ -1095,6 +1193,7 @@
     open2FADisable: openDisable2FAModal,
     get2FAConfig: get2FAConfig,
     openAccount: openAccountModal,
+    openLogin: openLoginModal,
     openAdmin: openAdminPanelModal
   };
 })();
