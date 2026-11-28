@@ -7,7 +7,7 @@
     "version": "26.3",
     "jarName": "shinyvisuals-26.3.jar",
     "downloadUrl": "https://shinyvisuals.github.io/downloads/shinyvisuals-26.3.jar",
-    "sizeBytes": 82401341,
+    "sizeBytes": 82358761,
     "sha256": "695d6c486b6898fb03020096fe8ad615ea50f142fbc2bc56a29c4047d580323d",
     "fabricApi": {
       "jarName": "fabric-api-0.165.0+26.3.jar",
